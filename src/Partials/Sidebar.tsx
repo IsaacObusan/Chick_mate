@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import Logo from "../assets/Logo.png";
 import Home from "../assets/Home.png";
@@ -8,7 +8,6 @@ import Inventory from "../assets/Inventory.png";
 import Sales from "../assets/Sales.png";
 import Supplier from "../assets/Supplier.png";
 import Control from "../assets/Control.png";
-
 
 const navItems = [
   { name: "Home", path: "/", icon: Home },
@@ -19,7 +18,31 @@ const navItems = [
   { name: "Control", path: "/control", icon: Control },
 ];
 
+const LogoutIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5 text-white"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"
+    />
+  </svg>
+);
+
 const Sidebar: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    console.log("Logged out");
+    navigate("/login");
+  };
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -33,8 +56,7 @@ const Sidebar: React.FC = () => {
               key={item.name}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-6 py-4 w-full text-lg transition-colors duration-200 
-                ${
+                `flex items-center gap-4 px-6 py-4 w-full text-lg transition-colors duration-200 ${
                   isActive
                     ? "bg-green-700 text-white font-semibold"
                     : "text-white hover:bg-green-500 hover:text-white"
@@ -46,12 +68,28 @@ const Sidebar: React.FC = () => {
               <span className="flex-1">{item.name}</span>
             </NavLink>
           ))}
+
+          {/* Desktop Logout Button (transparent) */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-6 py-4 mt-auto w-full text-lg text-white bg-transparent hover:bg-green-700 hover:text-white transition-colors duration-200"
+          >
+            <LogoutIcon />
+            <span>Logout</span>
+          </button>
         </nav>
       </aside>
 
-      {/* Mobile Top Logo */}
-      <div className="fixed top-0 left-0 z-50 flex items-center w-full px-4 py-3 bg-green-800 shadow-lg md:hidden">
+      {/* Mobile Top Bar with Logo and Logout */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-green-800 shadow-lg md:hidden">
         <img src={Logo} alt="Logo" className="w-auto h-8" />
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-3 py-1 text-white bg-transparent hover:bg-green-700 rounded transition-colors duration-200"
+        >
+          <LogoutIcon />
+          <span>Logout</span>
+        </button>
       </div>
 
       {/* Mobile Bottom Navigation */}
@@ -61,11 +99,8 @@ const Sidebar: React.FC = () => {
             key={item.name}
             to={item.path}
             className={({ isActive }) =>
-              `flex flex-col items-center text-xs transition-colors duration-200
-              ${
-                isActive
-                  ? "text-white font-semibold"
-                  : "text-green-200 hover:text-white"
+              `flex flex-col items-center text-xs transition-colors duration-200 ${
+                isActive ? "text-white font-semibold" : "text-green-200 hover:text-white"
               }`
             }
             end={item.path === "/"}
@@ -76,7 +111,7 @@ const Sidebar: React.FC = () => {
         ))}
       </div>
 
-      {/* Padding spacer to prevent bottom nav overlap */}
+      {/* Spacer to prevent bottom nav overlap */}
       <div className="h-16 md:hidden" />
     </>
   );
