@@ -2,20 +2,21 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 
 import Logo from "../assets/Logo.png";
-import HomeIcon from "../assets/Home.png";
-import InventoryIcon from "../assets/Inventory.png";
-import BatchIcon from "../assets/Batch.png";
-import SalesIcon from "../assets/Sales.png";
-import SuppliersIcon from "../assets/Supplier.png";
-import ControlIcon from "../assets/Control.png";
+import Home from "../assets/Home.png";
+import Batch from "../assets/Batch.png";
+import Inventory from "../assets/Inventory.png";
+import Sales from "../assets/Sales.png";
+import Supplier from "../assets/Supplier.png";
+import Control from "../assets/Control.png";
+
 
 const navItems = [
-  { name: "Home", path: "/", icon: HomeIcon },
-  { name: "Inventory", path: "/inventory", icon: InventoryIcon },
-  { name: "Batch", path: "/batch", icon: BatchIcon },
-  { name: "Sales", path: "/sales", icon: SalesIcon },
-  { name: "Suppliers", path: "/suppliers", icon: SuppliersIcon },
-  { name: "Control", path: "/control", icon: ControlIcon },
+  { name: "Home", path: "/", icon: Home },
+  { name: "Inventory", path: "/inventory", icon: Inventory },
+  { name: "Batch", path: "/batch", icon: Batch },
+  { name: "Sales", path: "/sales", icon: Sales },
+  { name: "Suppliers", path: "/suppliers", icon: Supplier },
+  { name: "Control", path: "/control", icon: Control },
 ];
 
 const Sidebar: React.FC = () => {
