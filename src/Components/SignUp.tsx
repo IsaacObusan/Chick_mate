@@ -12,6 +12,7 @@ const SignUpPage: React.FC = () => {
   const [role, setRole] = useState("user");
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -33,6 +34,55 @@ const SignUpPage: React.FC = () => {
     formData.append("password", password);
     formData.append("role", role);
     if (profileFile) formData.append("profilePic", profileFile);
+
+    // Validate inputs
+    const newErrors: { [key: string]: string } = {};
+    if (!username) {
+      newErrors.username = "Username is required.";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      newErrors.username = "Username can only contain alphanumeric characters and underscores.";
+    }
+    if (!firstName) {
+      newErrors.firstName = "First Name is required.";
+    } else if (!/^[a-zA-Z]+$/.test(firstName)) {
+      newErrors.firstName = "First Name can only contain alphabetical characters.";
+    }
+    if (!lastName) {
+      newErrors.lastName = "Last Name is required.";
+    } else if (!/^[a-zA-Z]+$/.test(lastName)) {
+      newErrors.lastName = "Last Name can only contain alphabetical characters.";
+    }
+    if (!email) {
+      newErrors.email = "Email is required.";
+    } else if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+      newErrors.email = "Invalid email format.";
+    }
+    if (!phoneNumber) {
+      newErrors.phoneNumber = "Phone Number is required.";
+    } else if (!/^(09|\+639)\d{9}$/.test(phoneNumber)) {
+      newErrors.phoneNumber = "Phone Number must be 11 digits and start with 09 or +639.";
+    }
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    } else if (password.length > 255) {
+      newErrors.password = "Password must be at most 255 characters.";
+    } else if (!/(?=.*[a-z])/.test(password)) {
+      newErrors.password = "Password must contain at least one lowercase letter.";
+    } else if (!/(?=.*[A-Z])/.test(password)) {
+      newErrors.password = "Password must contain at least one uppercase letter.";
+    } else if (!/(?=.*\d)/.test(password)) {
+      newErrors.password = "Password must contain at least one number.";
+    } else if (!/(?=.*[!@#$%^&*])/.test(password)) {
+      newErrors.password = "Password must contain at least one special character (!@#$%^&*).";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("http://localhost:8080/adduser", {
@@ -67,6 +117,43 @@ const SignUpPage: React.FC = () => {
     setProfileFile(null);
   };
 
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: "",
+    }));
+
+    switch (name) {
+      case "username":
+        setUsername(value);
+        break;
+      case "firstName":
+        setFirstName(value);
+        break;
+      case "lastName":
+        setLastName(value);
+        break;
+      case "suffix":
+        setSuffix(value);
+        break;
+      case "email":
+        setEmail(value);
+        break;
+      case "phoneNumber":
+        setPhoneNumber(value);
+        break;
+      case "password":
+        setPassword(value);
+        break;
+      case "role":
+        setRole(value);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <form
@@ -82,46 +169,53 @@ const SignUpPage: React.FC = () => {
             <span className="block mb-1 font-medium text-gray-700">Username</span>
             <input
               type="text"
-              placeholder="Enter username"
+              placeholder="e.g., john_isaac"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={handleInputChange}
               required
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="username"
             />
+            {errors.username && <p className="mt-1 text-sm text-red-500">{errors.username}</p>}
           </label>
 
           <label className="block">
             <span className="block mb-1 font-medium text-gray-700">First Name</span>
             <input
               type="text"
-              placeholder="Enter first name"
+              placeholder="e.g., John"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={handleInputChange}
               required
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="firstName"
             />
+            {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName}</p>}
           </label>
 
           <label className="block">
             <span className="block mb-1 font-medium text-gray-700">Last Name</span>
             <input
               type="text"
-              placeholder="Enter last name"
+              placeholder="e.g., Obusan"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={handleInputChange}
               required
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="lastName"
             />
+            {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName}</p>}
           </label>
 
           <label className="block">
             <span className="block mb-1 font-medium text-gray-700">Suffix</span>
             <input
               type="text"
-              placeholder="Enter suffix"
+              placeholder="e.g., Jr. or Sr."
               value={suffix}
-              onChange={(e) => setSuffix(e.target.value)}
+              onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="suffix"
             />
           </label>
 
@@ -129,44 +223,51 @@ const SignUpPage: React.FC = () => {
             <span className="block mb-1 font-medium text-gray-700">Email</span>
             <input
               type="email"
-              placeholder="Enter email"
+              placeholder="e.g., john.isaac@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleInputChange}
               required
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="email"
             />
+            {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
           </label>
 
           <label className="block">
             <span className="block mb-1 font-medium text-gray-700">Phone Number</span>
             <input
               type="tel"
-              placeholder="Enter phone number"
+              placeholder="e.g., 09123456789 or +639123456789"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={handleInputChange}
               required
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="phoneNumber"
             />
+            {errors.phoneNumber && <p className="mt-1 text-sm text-red-500">{errors.phoneNumber}</p>}
           </label>
 
           <label className="block">
             <span className="block mb-1 font-medium text-gray-700">Password</span>
             <input
               type="password"
-              placeholder="Enter password"
+              placeholder="e.g., P@ssw0rd!"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handleInputChange}
               required
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="password"
             />
+            {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
           </label>
 
           <label className="block">
             <span className="block mb-1 font-medium text-gray-700">Role</span>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              name="role"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
