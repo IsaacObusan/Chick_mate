@@ -14,6 +14,14 @@ const SignUpPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  const validSuffixes = [
+    "Jr.", "II", "III", "IV", "V", // Generational
+    "MD", "PhD", "DDS", "DVM", "Esq.", "CPA", "RN", "OD", // Professional / Academic
+    "OSB", "SJ", "KC", // Religious / Honorary
+    "QC", "Ret.", "Hon.", "PNP", // Miscellaneous / Cultural
+    "N.A." // Not Applicable
+  ];
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setProfileFile(e.target.files[0]);
@@ -28,7 +36,7 @@ const SignUpPage: React.FC = () => {
     formData.append("username", username);
     formData.append("firstName", firstName);
     formData.append("lastName", lastName);
-    formData.append("suffix", suffix);
+    formData.append("suffix", suffix || "N.A."); // Set to "N.A." if empty
     formData.append("email", email);
     formData.append("phoneNumber", phoneNumber);
     formData.append("password", password);
@@ -51,6 +59,9 @@ const SignUpPage: React.FC = () => {
       newErrors.lastName = "Last Name is required.";
     } else if (!/^[a-zA-Z]+$/.test(lastName)) {
       newErrors.lastName = "Last Name can only contain alphabetical characters.";
+    }
+    if (suffix && !validSuffixes.includes(suffix)) {
+      newErrors.suffix = "Invalid suffix.";
     }
     if (!email) {
       newErrors.email = "Email is required.";
@@ -78,6 +89,10 @@ const SignUpPage: React.FC = () => {
       newErrors.password = "Password must contain at least one special character (!@#$%^&*).";
     }
 
+    if (!profileFile) {
+      newErrors.profilePic = "Profile picture is required.";
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setLoading(false);
@@ -85,6 +100,8 @@ const SignUpPage: React.FC = () => {
     }
 
     try {
+   
+
       const response = await fetch("http://localhost:8080/adduser", {
         method: "POST",
         body: formData,
@@ -211,12 +228,13 @@ const SignUpPage: React.FC = () => {
             <span className="block mb-1 font-medium text-gray-700">Suffix</span>
             <input
               type="text"
-              placeholder="e.g., Jr. or Sr."
+              placeholder="e.g., Jr. or N.A. if none"
               value={suffix}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
               name="suffix"
             />
+            {errors.suffix && <p className="mt-1 text-sm text-red-500">{errors.suffix}</p>}
           </label>
 
           <label className="block">
@@ -281,8 +299,10 @@ const SignUpPage: React.FC = () => {
             type="file"
             accept="image/*"
             onChange={handleFileChange}
+            required
             className="w-full"
           />
+          {errors.profilePic && <p className="mt-1 text-sm text-red-500">{errors.profilePic}</p>}
         </label>
 
         <button
