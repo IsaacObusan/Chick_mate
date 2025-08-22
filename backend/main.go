@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -122,11 +123,54 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "User added successfully!")
 }
 
+// POST login user
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Query the database for the user with the provided email and password
+	storedPassword := ""
+	err = db.QueryRow("SELECT password FROM cm_users WHERE email = ?", user.Email).Scan(&storedPassword)
+
+	if err == sql.ErrNoRows {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Compare the provided password with the stored password
+	if user.Password != storedPassword { // In a real app, use a secure password hashing library like bcrypt
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "Login successful")
+}
+
 func main() {
 	initDB()
 	defer db.Close()
 
 	http.HandleFunc("/adduser", addUserHandler)
+	http.HandleFunc("/login", loginHandler)
 
 	fmt.Println("🚀 Server running at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

@@ -2,14 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../assets/Logo.png";
 
-const mockLogin = async (username: string, password: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(username === "admin" && password === "password");
-    }, 1000);
-  });
-};
-
 const LoginModal: React.FC = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -22,14 +14,20 @@ const LoginModal: React.FC = () => {
     setError("");
     setLoading(true);
 
-    const success = await mockLogin(username, password);
-    setLoading(false);
+    const response = await fetch("http://localhost:8080/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: username, password }),
+    });
 
-    if (success) {
-      localStorage.setItem('authToken', 'dummy-token'); // Set auth token for protected routes
+    if (response.ok) {
+      localStorage.setItem("authToken", "dummy-token"); // Set auth token for protected routes
       navigate("/");
     } else {
-      setError("Invalid username or password");
+      const errorText = await response.text();
+      setError(errorText || "Invalid username or password");
     }
   };
 
