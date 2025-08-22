@@ -50,6 +50,20 @@ const Sidebar: React.FC = () => {
         <div className="flex items-center justify-center py-6 border-b border-green-700">
           <img src={Logo} alt="Logo" className="h-auto w-50" />
         </div>
+
+        {/* Profile Placeholder */}
+        <div className="flex items-center gap-4 px-6 py-4 mt-6">
+          <img
+            src="https://via.placeholder.com/40"
+            alt="Profile"
+            className="w-10 h-10 rounded-full"
+          />
+          <div className="flex flex-col">
+            <p className="text-white text-lg font-semibold">User Name</p>
+            <p className="text-green-200 text-sm">user@example.com</p>
+          </div>
+        </div>
+
         <nav className="flex flex-col flex-1 mt-6">
           {navItems.map((item) => (
             <NavLink
@@ -83,13 +97,20 @@ const Sidebar: React.FC = () => {
       {/* Mobile Top Bar with Logo and Logout */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-green-800 shadow-lg md:hidden">
         <img src={Logo} alt="Logo" className="w-auto h-8" />
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-3 py-1 text-white bg-transparent hover:bg-green-700 rounded transition-colors duration-200"
-        >
-          <LogoutIcon />
-          <span>Logout</span>
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-1 text-white bg-transparent hover:bg-green-700 rounded transition-colors duration-200"
+          >
+            <LogoutIcon />
+            <span>Logout</span>
+          </button>
+          <img
+            src="https://via.placeholder.com/32"
+            alt="Profile"
+            className="w-8 h-8 rounded-full"
+          />
+        </div>
       </div>
 
       {/* Mobile Bottom Navigation */}
