@@ -8,6 +8,7 @@ import Inventory from "../assets/Inventory.png";
 import Sales from "../assets/Sales.png";
 import Supplier from "../assets/Supplier.png";
 import Control from "../assets/Control.png";
+import Logout from "../assets/Logout.png";
 
 const navItems = [
   { name: "Home", path: "/", icon: Home },
@@ -21,7 +22,7 @@ const navItems = [
 const LogoutIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5 text-white"
+    className="w-5 h-5 text-white"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -40,8 +41,17 @@ const Sidebar: React.FC = () => {
 
   const handleLogout = () => {
     console.log("Logged out");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    localStorage.removeItem("profilePic");
+    localStorage.removeItem("role");
     navigate("/login");
   };
+
+  const username = localStorage.getItem("username") || "Guest";
+  const email = localStorage.getItem("email") || "guest@example.com";
+  const profilePic = localStorage.getItem("profilePic");
 
   return (
     <>
@@ -54,13 +64,13 @@ const Sidebar: React.FC = () => {
         {/* Profile Placeholder */}
         <div className="flex items-center gap-4 px-6 py-4 mt-6">
           <img
-            src="https://via.placeholder.com/40"
+            src={profilePic ? `http://localhost:8080/uploads/${profilePic}` : "https://via.placeholder.com/40"}
             alt="Profile"
             className="w-10 h-10 rounded-full"
           />
           <div className="flex flex-col">
-            <p className="text-white text-lg font-semibold">User Name</p>
-            <p className="text-green-200 text-sm">user@example.com</p>
+            <p className="text-lg font-semibold text-white">{username}</p>
+            <p className="text-sm text-green-200">{email}</p>
           </div>
         </div>
 
@@ -86,7 +96,7 @@ const Sidebar: React.FC = () => {
           {/* Desktop Logout Button (transparent) */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-6 py-4 mt-auto w-full text-lg text-white bg-transparent hover:bg-green-700 hover:text-white transition-colors duration-200"
+            className="flex items-center w-full gap-3 px-6 py-4 mt-auto text-lg text-white transition-colors duration-200 bg-transparent hover:bg-green-700 hover:text-white"
           >
             <LogoutIcon />
             <span>Logout</span>
@@ -100,13 +110,13 @@ const Sidebar: React.FC = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-1 text-white bg-transparent hover:bg-green-700 rounded transition-colors duration-200"
+            className="flex items-center gap-2 px-3 py-1 text-white transition-colors duration-200 bg-transparent rounded hover:bg-green-700"
           >
             <LogoutIcon />
             <span>Logout</span>
           </button>
           <img
-            src="https://via.placeholder.com/32"
+            src={profilePic ? `http://localhost:8080/uploads/${profilePic}` : "https://via.placeholder.com/32"}
             alt="Profile"
             className="w-8 h-8 rounded-full"
           />

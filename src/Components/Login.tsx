@@ -23,7 +23,12 @@ const LoginModal: React.FC = () => {
     });
 
     if (response.ok) {
+      const userData = await response.json();
       localStorage.setItem("authToken", "dummy-token"); // Set auth token for protected routes
+      localStorage.setItem("username", userData.username);
+      localStorage.setItem("email", userData.email);
+      localStorage.setItem("profilePic", userData.profilePic);
+      localStorage.setItem("role", userData.role);
       navigate("/");
     } else {
       const errorText = await response.text();

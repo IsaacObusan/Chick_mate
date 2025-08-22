@@ -161,8 +161,24 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch user details including profile_pic
+	err = db.QueryRow("SELECT username, email, role, profile_pic FROM cm_users WHERE email = ?", user.Email).Scan(
+		&user.Username, &user.Email, &user.Role, &user.ProfilePic,
+	)
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Login successful")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":    "Login successful",
+		"username":   user.Username,
+		"email":      user.Email,
+		"role":       user.Role,
+		"profilePic": user.ProfilePic,
+	})
 }
 
 func main() {
@@ -171,6 +187,9 @@ func main() {
 
 	http.HandleFunc("/adduser", addUserHandler)
 	http.HandleFunc("/login", loginHandler)
+
+	// Serve static files from the "uploads" directory
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
 	fmt.Println("🚀 Server running at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
