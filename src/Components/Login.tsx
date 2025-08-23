@@ -14,7 +14,8 @@ const LoginModal: React.FC = () => {
     setError("");
     setLoading(true);
 
-    const response = await fetch("http://localhost:8080/login", {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+    const response = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -41,20 +42,20 @@ const LoginModal: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-screen font-sans">
+    <div className="flex flex-col w-screen h-screen font-sans md:flex-row">
       {/* Left Side - Illustration */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-green-900 text-white p-6">
-        <img src={Logo} alt="Logo" className="w-40 md:w-56 mb-6" />
-        <h1 className="text-3xl md:text-4xl font-extrabold mb-2">Welcome Back!</h1>
-        <p className="text-gray-200 text-center max-w-xs">
+      <div className="flex flex-col items-center justify-center flex-1 p-6 text-white bg-green-900">
+        <img src={Logo} alt="Logo" className="w-40 mb-6 md:w-56" />
+        <h1 className="mb-2 text-3xl font-extrabold md:text-4xl">Welcome Back!</h1>
+        <p className="max-w-xs text-center text-gray-200">
           Log in to access your dashboard and manage your operations efficiently.
         </p>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-3xl p-8 md:p-12 w-11/12 max-w-md shadow-2xl">
-          <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">Sign In</h2>
+      <div className="flex items-center justify-center flex-1 bg-gray-50">
+        <div className="w-11/12 max-w-md p-8 bg-white shadow-2xl rounded-3xl md:p-12">
+          <h2 className="mb-8 text-3xl font-bold text-center text-gray-800">Sign In</h2>
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Email Input */}
             <div>
@@ -62,7 +63,7 @@ const LoginModal: React.FC = () => {
               <input
                 type="text"
                 placeholder="Enter your email"
-                className="mt-2 w-full px-5 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-300"
+                className="w-full px-5 py-3 mt-2 transition duration-300 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -74,31 +75,31 @@ const LoginModal: React.FC = () => {
               <input
                 type="password"
                 placeholder="Enter your password"
-                className="mt-2 w-full px-5 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-300"
+                className="w-full px-5 py-3 mt-2 transition duration-300 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
             {/* Error Message */}
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            {error && <p className="text-sm text-center text-red-500">{error}</p>}
 
             {/* Login Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-lg transition duration-300 shadow-lg"
+              className="w-full py-3 text-lg font-semibold text-white transition duration-300 bg-green-600 shadow-lg hover:bg-green-700 rounded-xl"
             >
               {loading ? "Signing in..." : "Login"}
             </button>
 
             {/* Sign Up Redirect */}
-            <div className="text-center mt-4 text-sm">
+            <div className="mt-4 text-sm text-center">
               <span className="text-gray-500">Don't have an account? </span>
               <button
                 type="button"
                 onClick={handleSignUpRedirect}
-                className="text-green-600 font-semibold hover:underline"
+                className="font-semibold text-green-600 hover:underline"
               >
                 Sign Up
               </button>
