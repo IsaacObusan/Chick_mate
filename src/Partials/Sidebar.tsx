@@ -56,7 +56,7 @@ const Sidebar: React.FC = () => {
     <>
       {/* Desktop Sidebar */}
       <aside className="flex-col hidden w-64 min-h-screen pb-10 bg-green-800 shadow-lg md:flex">
-        <div className="flex items-center justify-center py-6 border-b border-green-700">
+        <div className="flex items-center justify-center py-6 border-b border-green-800">
           <img src={Logo} alt="Logo" className="h-auto w-50" />
         </div>
 
