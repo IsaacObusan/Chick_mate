@@ -2,6 +2,7 @@ services:
   - type: web
     name: chickmate-backend
     env: go
+    goVersion: "1.25.0"
     rootDir: backend/
     buildCommand: go build -o out/main main.go
     startCommand: ./out/main
