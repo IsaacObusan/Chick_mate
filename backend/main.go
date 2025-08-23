@@ -12,14 +12,25 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
 
-func enableCORS(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+// enableCORS is now a middleware
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // User struct
@@ -37,10 +48,101 @@ type User struct {
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
+// logAndSendError logs an error and sends a JSON error response.
+func logAndSendError(w http.ResponseWriter, logMessage, userMessage string, status int) {
+	log.Println(logMessage)
+	jsonError(w, userMessage, status)
+}
+
+// jsonError sends a JSON error response.
+func jsonError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+// handleProfilePicUpload handles saving the profile picture.
+func handleProfilePicUpload(r *http.Request) (string, error) {
+	profileFile, header, err := r.FormFile("profilePic")
+	if err != nil {
+		if err == http.ErrMissingFile {
+			log.Println("No profile picture uploaded.")
+			return "", nil // No file uploaded, not an error for us
+		}
+		return "", fmt.Errorf("failed to get profile picture from form: %w", err)
+	}
+	defer profileFile.Close()
+
+	os.MkdirAll("uploads", os.ModePerm)
+	profileFilename := fmt.Sprintf("%d_%s", time.Now().Unix(), header.Filename)
+	dst, err := os.Create(filepath.Join("uploads", profileFilename))
+	if err != nil {
+		return "", fmt.Errorf("failed to create file for profile picture: %w", err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, profileFile); err != nil {
+		return "", fmt.Errorf("failed to copy profile picture to file: %w", err)
+	}
+
+	log.Println("Saved profile picture:", profileFilename)
+	return profileFilename, nil
+}
+
+// insertUserIntoDB inserts a new user into the database.
+func insertUserIntoDB(user User, profilePicFilename string) error {
+	_, err := db.Exec(`INSERT INTO cm_users 
+		(username, first_name, last_name, suffix, email, phone_number, password, role, profile_pic)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		user.Username, user.FirstName, user.LastName, user.Suffix, user.Email, user.PhoneNumber, user.Password, user.Role, profilePicFilename,
+	)
+	return err
+}
+
+// getUserPasswordByEmail retrieves a user's password by email.
+func getUserPasswordByEmail(email string) (string, error) {
+	var storedPassword string
+	err := db.QueryRow("SELECT password FROM cm_users WHERE email = ?", email).Scan(&storedPassword)
+	return storedPassword, err
+}
+
+// getUserDetailsByEmail retrieves user details by email.
+func getUserDetailsByEmail(email string) (User, error) {
+	var user User
+	err := db.QueryRow("SELECT username, email, role, profile_pic FROM cm_users WHERE email = ?", email).Scan(
+		&user.Username, &user.Email, &user.Role, &user.ProfilePic,
+	)
+	return user, err
+}
+
+// parseAddUserForm parses the multipart form data for addUserHandler.
+func parseAddUserForm(r *http.Request) (User, error) {
+	var user User
+	user.Username = r.FormValue("username")
+	user.FirstName = r.FormValue("firstName")
+	user.LastName = r.FormValue("lastName")
+	user.Suffix = r.FormValue("suffix")
+	user.Email = r.FormValue("email")
+	user.PhoneNumber = r.FormValue("phoneNumber")
+	user.Password = r.FormValue("password")
+	user.Role = r.FormValue("role")
+	return user, nil
+}
+
+// decodeLoginRequest decodes the JSON body for loginHandler.
+func decodeLoginRequest(r *http.Request) (User, error) {
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	return user, err
+}
+
 // Initialize DB connection
 func initDB() {
 	var err error
-	dsn := "poultry:chickmatepoultry@tcp(mysql-poultry.alwaysdata.net:3306)/poultry_db"
+	dsn := os.Getenv("DATABASE_DSN")
+	if dsn == "" {
+		log.Fatal("DATABASE_DSN environment variable not set")
+	}
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("DB connection error:", err)
@@ -53,121 +155,109 @@ func initDB() {
 
 // POST new user with file upload
 func addUserHandler(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w)
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
+	// CORS is now handled by middleware
+	// if r.Method == http.MethodOptions {
+	// 	w.WriteHeader(http.StatusOK)
+	// 	return
+	// }
 	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		jsonError(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	// Parse multipart form (max 5MB)
 	if err := r.ParseMultipartForm(5 << 20); err != nil {
-		log.Println("Parse form error:", err)
-		http.Error(w, "Cannot parse form: "+err.Error(), http.StatusBadRequest)
+		logAndSendError(w, "Parse form error: "+err.Error(), "Cannot parse form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Read form values
-	username := r.FormValue("username")
-	firstName := r.FormValue("firstName")
-	lastName := r.FormValue("lastName")
-	suffix := r.FormValue("suffix")
-	email := r.FormValue("email")
-	phoneNumber := r.FormValue("phoneNumber")
-	password := r.FormValue("password")
-	role := r.FormValue("role")
-
-	log.Println("Form received:", username, firstName, lastName, email, phoneNumber, role, "suffix:", suffix)
-
-	// Handle profile picture file
-	profileFile, header, err := r.FormFile("profilePic")
-	profileFilename := ""
-	if err == nil {
-		defer profileFile.Close()
-		os.MkdirAll("uploads", os.ModePerm)
-		profileFilename = fmt.Sprintf("%d_%s", time.Now().Unix(), header.Filename)
-		dst, err := os.Create(filepath.Join("uploads", profileFilename))
-		if err != nil {
-			log.Println("File create error:", err)
-			http.Error(w, "Cannot save file: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer dst.Close()
-		if _, err := io.Copy(dst, profileFile); err != nil {
-			log.Println("File copy error:", err)
-			http.Error(w, "Cannot save file: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		log.Println("Saved profile picture:", profileFilename)
-	} else {
-		log.Println("No profile picture uploaded:", err)
-	}
-
-	// Insert into DB
-	_, err = db.Exec(`INSERT INTO cm_users 
-		(username, first_name, last_name, suffix, email, phone_number, password, role, profile_pic)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		username, firstName, lastName, suffix, email, phoneNumber, password, role, profileFilename,
-	)
+	user, err := parseAddUserForm(r)
 	if err != nil {
-		log.Println("DB Insert Error:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logAndSendError(w, "Form parsing error: "+err.Error(), "Failed to parse user data", http.StatusBadRequest)
 		return
 	}
 
-	log.Println("User inserted successfully:", username)
+	// The log for "Form received" is not an error log, so it remains.
+	log.Println("Form received:", user.Username, user.FirstName, user.LastName, user.Email, user.PhoneNumber, user.Role, "suffix:", user.Suffix)
+
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		logAndSendError(w, "Password hashing error: "+err.Error(), "Failed to process password", http.StatusInternalServerError)
+		return
+	}
+	user.Password = string(hashedPassword)
+
+	// Handle profile picture file
+	profileFilename, err := handleProfilePicUpload(r)
+	if err != nil {
+		logAndSendError(w, "Profile picture upload error: "+err.Error(), "Failed to upload profile picture: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Insert into DB
+	err = insertUserIntoDB(User{
+		Username:    user.Username,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Suffix:      user.Suffix,
+		Email:       user.Email,
+		PhoneNumber: user.PhoneNumber,
+		Password:    user.Password,
+		Role:        user.Role,
+	}, profileFilename)
+	if err != nil {
+		logAndSendError(w, "DB Insert Error: "+err.Error(), "Failed to register user: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("User inserted successfully:", user.Username)
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintln(w, "User added successfully!")
+	json.NewEncoder(w).Encode(map[string]string{"message": "User added successfully!"})
 }
 
 // POST login user
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w)
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
+	// CORS is now handled by middleware
+	// if r.Method == http.MethodOptions {
+	// 	w.WriteHeader(http.StatusOK)
+	// 	return
+	// }
 	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		jsonError(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var user User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	user, err := decodeLoginRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Query the database for the user with the provided email and password
-	storedPassword := ""
-	err = db.QueryRow("SELECT password FROM cm_users WHERE email = ?", user.Email).Scan(&storedPassword)
+	storedPassword, err := getUserPasswordByEmail(user.Email)
 
 	if err == sql.ErrNoRows {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		jsonError(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	} else if err != nil {
-		log.Println("Database query error:", err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		// Redundant log.Println removed, logAndSendError handles logging
+		logAndSendError(w, "Database query error: "+err.Error(), "Server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Compare the provided password with the stored password
-	if user.Password != storedPassword { // In a real app, use a secure password hashing library like bcrypt
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+	// Compare the provided password with the stored hashed password
+	if err = bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(user.Password)); err != nil {
+		jsonError(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
 	// Fetch user details including profile_pic
-	err = db.QueryRow("SELECT username, email, role, profile_pic FROM cm_users WHERE email = ?", user.Email).Scan(
-		&user.Username, &user.Email, &user.Role, &user.ProfilePic,
-	)
+	user, err = getUserDetailsByEmail(user.Email)
 	if err != nil {
-		log.Println("Database query error:", err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		// Redundant log.Println removed, logAndSendError handles logging
+		logAndSendError(w, "Database query error: "+err.Error(), "Server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -185,8 +275,8 @@ func main() {
 	initDB()
 	defer db.Close()
 
-	http.HandleFunc("/adduser", addUserHandler)
-	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/adduser", corsMiddleware(http.HandlerFunc(addUserHandler)).ServeHTTP)
+	http.HandleFunc("/login", corsMiddleware(http.HandlerFunc(loginHandler)).ServeHTTP)
 
 	// Serve static files from the "uploads" directory
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
