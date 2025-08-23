@@ -52,8 +52,6 @@ const Sidebar: React.FC = () => {
   const email = localStorage.getItem("email") || "guest@example.com";
   const profilePic = localStorage.getItem("profilePic");
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
   return (
     <>
       {/* Desktop Sidebar */}
@@ -65,7 +63,7 @@ const Sidebar: React.FC = () => {
         {/* Profile Placeholder */}
         <div className="flex items-center gap-4 px-6 py-4 mt-6">
           <img
-            src={profilePic ? `${API_BASE_URL}/uploads/${profilePic}` : "https://via.placeholder.com/40"}
+            src={profilePic ? `http://localhost:8080/uploads/${profilePic}` : "https://via.placeholder.com/40"}
             alt="Profile"
             className="w-10 h-10 rounded-full"
           />
@@ -117,7 +115,7 @@ const Sidebar: React.FC = () => {
             <span>Logout</span>
           </button>
           <img
-            src={profilePic ? `${API_BASE_URL}/uploads/${profilePic}` : "https://via.placeholder.com/32"}
+            src={profilePic ? `http://localhost:8080/uploads/${profilePic}` : "https://via.placeholder.com/32"}
             alt="Profile"
             className="w-8 h-8 rounded-full"
           />

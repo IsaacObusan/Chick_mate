@@ -14,8 +14,6 @@ const SignUpPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
   const validSuffixes = [
     "Jr.", "II", "III", "IV", "V", // Generational
     "MD", "PhD", "DDS", "DVM", "Esq.", "CPA", "RN", "OD", // Professional / Academic
@@ -102,7 +100,9 @@ const SignUpPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/adduser`, {
+   
+
+      const response = await fetch("http://localhost:8080/adduser", {
         method: "POST",
         body: formData,
       });
