@@ -8,7 +8,6 @@ import Inventory from "../assets/Inventory.png";
 import Sales from "../assets/Sales.png";
 import Supplier from "../assets/Supplier.png";
 import Control from "../assets/Control.png";
-import Logout from "../assets/Logout.png";
 
 const navItems = [
   { name: "Home", path: "/", icon: Home },
