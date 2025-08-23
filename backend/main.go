@@ -40,7 +40,12 @@ type User struct {
 // Initialize DB connection
 func initDB() {
 	var err error
-	dsn := "poultry:chickmatepoultry@tcp(mysql-poultry.alwaysdata.net:3306)/poultry_db"
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		// Fallback for local development if DATABASE_URL is not set
+		dsn = "poultry:chickmatepoultry@tcp(mysql-poultry.alwaysdata.net:3306)/poultry_db"
+	}
+
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("DB connection error:", err)
@@ -191,6 +196,11 @@ func main() {
 	// Serve static files from the "uploads" directory
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
-	fmt.Println("🚀 Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Printf("🚀 Server running on port %s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

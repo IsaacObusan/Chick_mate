@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: chickmate-backend
+    env: go
+    rootDir: backend/
+    buildCommand: go build -o out/main main.go
+    startCommand: ./out/main
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Set to true if you want Render to manage this value from its UI.
+      - key: PORT
+        value: "8080" # Render usually sets this automatically, but explicitly defining it here for clarity.
