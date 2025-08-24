@@ -214,7 +214,7 @@ export default function BatchMain() {
         {tab === 'harvesting' && (
           <>
             <Card title="Batch" right={<Pill>{selectedBatch ? `Start ${formatDate(selectedBatch.startDate)}` : "Select a batch"}</Pill>}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-12">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Batch">
                   <select
                     value={batchId}
@@ -228,28 +228,26 @@ export default function BatchMain() {
                   </select>
                 </Field>
                 <Field label="Population">
-                  <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                  <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Population" />
                 </Field>
-              </div>
-              <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-12">
                 <Field label="Age">
-                  <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                  <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
                 </Field>
                 <Field label="Mortality">
-                  <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                  <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
                 </Field>
               </div>
-              <div className="flex flex-col justify-end gap-4 mt-4 sm:flex-row">
-                <button className="flex items-center justify-center w-full gap-4 px-8 py-4 text-lg font-bold text-center text-white bg-orange-500 hover:bg-orange-600 rounded-xl sm:justify-start sm:w-auto" type="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
+                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Add Batch">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   Add
                 </button>
-                <button className="flex items-center justify-center w-full gap-4 px-8 py-4 text-lg font-bold text-center text-white bg-blue-500 hover:bg-blue-600 rounded-xl sm:justify-start sm:w-auto" type="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
+                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Edit Batch">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
                   Edit
                 </button>
-                <button className="flex items-center justify-center w-full gap-4 px-8 py-4 text-lg font-bold text-center text-white bg-red-500 hover:bg-red-600 rounded-xl sm:justify-start sm:w-auto" type="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
+                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Delete Batch">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
                   Delete
                 </button>
               </div>
@@ -279,7 +277,7 @@ export default function BatchMain() {
               </table>
             </div>
             <div className="grid items-end grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
-              <div>
+              <div className="sm:col-span-2">
                 <Field label="Bird Quantity">
                   <input type="text" className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter quantity" title="Bird Quantity" />
                 </Field>
@@ -301,8 +299,8 @@ export default function BatchMain() {
                   </div>
                 </Field>
               </div>
-              <div>
-                <button className="w-full px-6 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700" type="button">
+              <div className="sm:col-span-2 md:col-span-4 flex items-end">
+                <button className="w-fit px-3 py-1 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600" type="button" title="Add to Inventory">
                   Add to Inventory
                 </button>
               </div>
@@ -322,7 +320,7 @@ export default function BatchMain() {
                 </div>
               }
             >
-              <div className="grid items-end grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-12">
+              <div className="grid items-end grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Batch">
                   <select
                     value={batchId}
@@ -338,28 +336,26 @@ export default function BatchMain() {
                   </select>
                 </Field>
                 <Field label="Population">
-                <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Population" />
               </Field>
-            </div>
-            <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-12">
               <Field label="Age">
-                <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
               </Field>
               <Field label="Mortality">
-                <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
               </Field>
             </div>
-            <div className="flex flex-col justify-end gap-4 mt-4 sm:flex-row">
-              <button className="flex items-center justify-center w-full gap-4 px-8 py-4 text-lg font-bold text-center text-white bg-orange-500 hover:bg-orange-600 rounded-xl sm:justify-start sm:w-auto" type="button">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
+              <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Add Batch">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 Add
               </button>
-              <button className="flex items-center justify-center w-full gap-4 px-8 py-4 text-lg font-bold text-center text-white bg-blue-500 hover:bg-blue-600 rounded-xl sm:justify-start sm:w-auto" type="button">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
+              <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Edit Batch">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
                 Edit
               </button>
-              <button className="flex items-center justify-center w-full gap-4 px-8 py-4 text-lg font-bold text-center text-white bg-red-500 hover:bg-red-600 rounded-xl sm:justify-start sm:w-auto" type="button">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
+              <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Delete Batch">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
                 Delete
               </button>
             </div>
@@ -410,16 +406,20 @@ export default function BatchMain() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="sm:col-span-2 md:col-span-4 flex items-end gap-2">
                     <button
                       onClick={() => {
                         if (!fmItemId || !fmQty) return alert("Pick item and qty");
                         addFeedMedEntry({ itemId: fmItemId, qty: fmQty, unit: fmUnit });
                         setFmQty(undefined);
                       }}
-                      className="px-4 py-2 text-sm font-semibold text-white transition-colors bg-orange-500 rounded-xl hover:bg-orange-600"
+                      className="w-fit px-3 py-1 text-sm font-semibold text-white transition-colors bg-orange-500 rounded-xl hover:bg-orange-600"
+                      title="Add Feed/Medicine Entry"
                     >
                       Add entry
+                    </button>
+                    <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
+                      Edit Items
                     </button>
                   </div>
 
@@ -483,19 +483,22 @@ export default function BatchMain() {
                         <NumberInput value={useQty} onChange={setUseQty} min={0} step={1} placeholder="0" title="Inventory Usage Quantity" />
                       </Field>
                     </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        if (!useItemId || !useQty) return alert("Pick item and qty");
-                        addUsageEntry({ itemId: useItemId, qty: useQty });
-                        setUseQty(undefined);
-                      }}
-                      className="px-4 py-2 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-black"
-                    >
-                      Add entry
-                    </button>
+                    <div className="sm:col-span-2 md:col-span-4 flex items-end gap-2">
+                      <button
+                        onClick={() => {
+                          if (!useItemId || !useQty) return alert("Pick item and qty");
+                          addUsageEntry({ itemId: useItemId, qty: useQty });
+                          setUseQty(undefined);
+                        }}
+                        className="w-fit px-3 py-1 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600"
+                        title="Add Inventory Usage Entry"
+                      >
+                        Add entry
+                      </button>
+                      <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Inventory Items">
+                        Edit Items
+                      </button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto border rounded-lg max-h-72">
@@ -547,26 +550,28 @@ export default function BatchMain() {
                         <input
                           value={mortCause}
                           onChange={e => setMortCause(e.target.value)}
-                          placeholder="Optional"
                           className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           title="Mortality Cause"
                         />
                       </label>
                     </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        if (!mortCount) return alert("Enter a count");
-                        addMortalityEntry({ count: mortCount, cause: mortCause });
-                        setMortCount(undefined);
-                        setMortCause("");
-                      }}
-                      className="px-4 py-2 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-black"
-                    >
-                      Add entry
-                    </button>
+                    <div className="sm:col-span-2 md:col-span-4 flex items-end gap-2">
+                      <button
+                        onClick={() => {
+                          if (!mortCount) return alert("Enter a count");
+                          addMortalityEntry({ count: mortCount, cause: mortCause });
+                          setMortCount(undefined);
+                          setMortCause("");
+                        }}
+                        className="w-fit px-3 py-1 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600"
+                        title="Add Mortality Entry"
+                      >
+                        Add entry
+                      </button>
+                      <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Mortality Entries">
+                        Edit Items
+                      </button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto border rounded-lg max-h-72">

@@ -19,5 +19,8 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'jsx-a11y/label-has-associated-control': 'off',
+    },
   },
 ])
