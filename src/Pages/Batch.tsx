@@ -61,7 +61,7 @@ function Card({ title, children, right }: { title: string; children?: React.Reac
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
-      <span className="w-28 shrink-0">{label}</span>
+      <span className="shrink-0">{label}</span>
       <div className="flex-1">{children}</div>
     </label>
   );
@@ -136,7 +136,7 @@ export default function BatchMain() {
   const feedMedItems = items.filter(i => i.category === "feed" || i.category === "medicine");
   const generalItems = items.filter(i => i.category === "general");
 
-  function NumberInput({ value, onChange, min = 0, step = 1, placeholder }: { value?: number; onChange: (v: number) => void; min?: number; step?: number; placeholder?: string }) {
+  function NumberInput({ value, onChange, min = 0, step = 1, placeholder, title }: { value?: number; onChange: (v: number) => void; min?: number; step?: number; placeholder?: string; title?: string }) {
     return (
       <input
         type="number"
@@ -145,6 +145,7 @@ export default function BatchMain() {
         min={min}
         step={step}
         placeholder={placeholder}
+        title={title}
         className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     );
@@ -197,12 +198,14 @@ export default function BatchMain() {
           <button
             className={`px-4 py-2 rounded-t-lg font-semibold text-sm border-b-2 transition-colors duration-150 ${tab === 'monitoring' ? 'border-orange-500 text-orange-600 bg-white' : 'border-transparent text-gray-500 bg-gray-100 hover:border-orange-500 hover:text-orange-600'}`}
             onClick={() => setTab('monitoring')}
+            title="Monitoring Tab"
           >
             Monitoring
           </button>
           <button
             className={`px-4 py-2 rounded-t-lg font-semibold text-sm border-b-2 transition-colors duration-150 ${tab === 'harvesting' ? 'border-orange-500 text-orange-600 bg-white' : 'border-transparent text-gray-500 bg-gray-100 hover:border-orange-500 hover:text-orange-600'}`}
             onClick={() => setTab('harvesting')}
+            title="Harvesting Tab"
           >
             Harvesting
           </button>
@@ -217,6 +220,7 @@ export default function BatchMain() {
                     value={batchId}
                     onChange={e => setBatchId(e.target.value)}
                     className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    title="Select Batch"
                   >
                     {batches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
@@ -232,7 +236,7 @@ export default function BatchMain() {
                   <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
                 </Field>
                 <Field label="Mortality">
-                  <input readOnly value={mortalityEntries.filter(_ => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                  <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
                 </Field>
               </div>
               <div className="flex flex-col justify-end gap-4 mt-4 sm:flex-row">
@@ -251,7 +255,9 @@ export default function BatchMain() {
               </div>
             </Card>
             {/* Harvesting Table OUTSIDE the Card */}
-            <div className="mt-8 overflow-x-auto border rounded-lg max-h-72">
+            {/* Bird Quality, Type, Weight Total, Add to Inventory */}
+            <Card title="Harvesting Entry">
+            <div className="overflow-x-auto border rounded-lg max-h-72">
               <table className="min-w-full text-sm bg-white border border-gray-200 rounded-lg">
                 <thead>
                   <tr className="text-gray-700 bg-gray-100">
@@ -272,16 +278,15 @@ export default function BatchMain() {
                 </tbody>
               </table>
             </div>
-            {/* Bird Quality, Type, Weight Total, Add to Inventory */}
-            <div className="grid items-end grid-cols-1 gap-4 mt-8 sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
+            <div className="grid items-end grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
               <div>
                 <Field label="Bird Quantity">
-                  <input type="text" className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter quantity" />
+                  <input type="text" className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter quantity" title="Bird Quantity" />
                 </Field>
               </div>
               <div>
                 <Field label="Type">
-                  <select className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <select className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" title="Select Type">
                     <option value="">Select type</option>
                     <option value="Harvest">Harvest</option>
                     <option value="Cull">Cull</option>
@@ -291,7 +296,7 @@ export default function BatchMain() {
               <div>
                 <Field label="Weight Total">
                   <div className="flex items-center gap-2">
-                    <input type="number" className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0" min="0" step="0.01" />
+                    <input type="number" className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0" min="0" step="0.01" title="Weight Total" />
                     <span className="text-sm text-gray-700">Kg</span>
                   </div>
                 </Field>
@@ -302,6 +307,7 @@ export default function BatchMain() {
                 </button>
               </div>
             </div>
+            </Card>
           </>
                   
         )}
@@ -322,6 +328,7 @@ export default function BatchMain() {
                     value={batchId}
                     onChange={e => setBatchId(e.target.value)}
                         className="w-full px-4 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        title="Select Batch"
                   >
                     {batches.map(b => (
                       <option key={b.id} value={b.id}>
@@ -339,7 +346,7 @@ export default function BatchMain() {
                 <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
               </Field>
               <Field label="Mortality">
-                <input readOnly value={mortalityEntries.filter(_ => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
+                <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" />
               </Field>
             </div>
             <div className="flex flex-col justify-end gap-4 mt-4 sm:flex-row">
@@ -374,6 +381,7 @@ export default function BatchMain() {
                             if (def) setFmUnit(def);
                           }}
                           className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          title="Select Item"
                         >
                           {feedMedItems.map(it => (
                             <option key={it.id} value={it.id}>{it.name}</option>
@@ -383,7 +391,7 @@ export default function BatchMain() {
                     </div>
                     <div>
                       <Field label="Quantity">
-                        <NumberInput value={fmQty} onChange={setFmQty} min={0} step={0.01} placeholder="0" />
+                        <NumberInput value={fmQty} onChange={setFmQty} min={0} step={0.01} placeholder="0" title="Feed/Medicine Quantity" />
                       </Field>
                     </div>
                     <div>
@@ -392,6 +400,7 @@ export default function BatchMain() {
                           value={fmUnit}
                           onChange={e => setFmUnit(e.target.value as Unit)}
                           className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          title="Select Unit"
                         >
                           {(["kg","g","lb","pcs","ml","l"] as Unit[]).map(u => (
                             <option key={u} value={u}>{u}</option>
@@ -461,6 +470,7 @@ export default function BatchMain() {
                           value={useItemId}
                           onChange={e => setUseItemId(e.target.value)}
                           className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          title="Select Item"
                         >
                           {generalItems.map(it => (
                             <option key={it.id} value={it.id}>{it.name}</option>
@@ -470,7 +480,7 @@ export default function BatchMain() {
                     </div>
                     <div>
                       <Field label="Quantity">
-                        <NumberInput value={useQty} onChange={setUseQty} min={0} step={1} placeholder="0" />
+                        <NumberInput value={useQty} onChange={setUseQty} min={0} step={1} placeholder="0" title="Inventory Usage Quantity" />
                       </Field>
                     </div>
                   </div>
@@ -528,17 +538,18 @@ export default function BatchMain() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                     <div>
                       <Field label="Count">
-                        <NumberInput value={mortCount} onChange={setMortCount} min={0} step={1} placeholder="0" />
+                        <NumberInput value={mortCount} onChange={setMortCount} min={0} step={1} placeholder="0" title="Mortality Count" />
                       </Field>
                     </div>
                     <div className="sm:col-span-2">
                       <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
-                        <span className="w-28 shrink-0">Cause</span>
+                        <span className="shrink-0">Cause</span>
                         <input
                           value={mortCause}
                           onChange={e => setMortCause(e.target.value)}
                           placeholder="Optional"
                           className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          title="Mortality Cause"
                         />
                       </label>
                     </div>
