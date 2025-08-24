@@ -117,6 +117,9 @@ export default function BatchMain() {
   const [usageEntries, setUsageEntries] = useState<InventoryUsageEntry[]>([]);
   const [mortalityEntries, setMortalityEntries] = useState<MortalityEntry[]>([]);
 
+  // Get user role from localStorage
+  const userRole = localStorage.getItem("role");
+  const isAdmin = userRole === "admin";
 
   const selectedBatch = useMemo(() => batches.find(b => b.id === batchId) || null, [batches, batchId]);
   const todayAge = useMemo(() => (selectedBatch ? daysBetween(selectedBatch.startDate, new Date()) : 0), [selectedBatch]);
@@ -423,9 +426,11 @@ export default function BatchMain() {
                         >
                           Add entry
                         </button>
-                        <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
-                          Edit Items
-                        </button>
+                        {isAdmin && (
+                          <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
+                            Edit Items
+                          </button>
+                        )}
                       </div>
 
                       <div className="overflow-x-auto border rounded-lg max-h-72">
@@ -506,9 +511,11 @@ export default function BatchMain() {
                           >
                             Add entry
                           </button>
-                          <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Inventory Items">
-                            Edit Items
-                          </button>
+                          {isAdmin && (
+                            <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Inventory Items">
+                              Edit Items
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -579,9 +586,11 @@ export default function BatchMain() {
                           >
                             Add entry
                           </button>
-                          <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Mortality Entries">
-                            Edit Items
-                          </button>
+                          {isAdmin && (
+                            <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Mortality Entries">
+                              Edit Items
+                            </button>
+                          )}
                         </div>
                       </div>
 
