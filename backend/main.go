@@ -38,6 +38,14 @@ type User struct {
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
+// Batch struct (matching frontend)
+type Batch struct {
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	StartDate  string    `json:"startDate"`
+	Population int       `json:"currentChicken"` // Changed from `json:"population"` to `json:"currentChicken"` to match the frontend, but the Go struct field name is still Population.
+}
+
 // Initialize both DB connections
 func initDB() {
 	var err error
@@ -190,6 +198,77 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GET all batch IDs from cm_batches (uses poultry_db)
+func getBatchesHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rows, err := db1.Query("SELECT BatchID FROM cm_batches")
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var batches []string
+	for rows.Next() {
+		var batchID string
+		if err := rows.Scan(&batchID); err != nil {
+			log.Println("Scan error:", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		batches = append(batches, batchID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(batches)
+}
+
+// GET details for a single batch from cm_batches (uses poultry_db)
+func getBatchDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	batchID := r.URL.Path[len("/batch/"):]
+	if batchID == "" {
+		http.Error(w, "Batch ID is required", http.StatusBadRequest)
+		return
+	}
+
+	var batch Batch
+	err := db1.QueryRow("SELECT BatchID, name, start_date, CurrentChicken FROM cm_batches WHERE BatchID = ?", batchID).Scan(
+		&batch.ID, &batch.Name, &batch.StartDate, &batch.Population,
+	)
+
+	if err == sql.ErrNoRows {
+		http.Error(w, "Batch not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(batch)
+}
+
 // Example endpoint using poultry_main
 func testMainDBHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
@@ -215,6 +294,8 @@ func main() {
 	http.HandleFunc("/adduser", addUserHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/testmain", testMainDBHandler)
+	http.HandleFunc("/batches", getBatchesHandler)
+	http.HandleFunc("/batch/", getBatchDetailsHandler) // New handler for single batch details
 
 	// Serve static files
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))

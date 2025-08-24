@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 
 /**
  * Poultry Farm Monitoring UI - UI only
@@ -97,10 +97,29 @@ function daysBetween(a: string | Date, b: string | Date) {
 
 export default function BatchMain() {
   // Sample data
-  const [batches] = useState<Batch[]>([
-    { id: "b1", name: "Batch 1", startDate: new Date(Date.now() - 14 * 86400000).toISOString(), population: 200 },
-    { id: "b2", name: "Batch 2", startDate: new Date(Date.now() - 5 * 86400000).toISOString(), population: 120 }, 
-  ]);
+  const [batches, setBatches] = useState<string[]>([]); // Change type to string[]
+  const [batchDetails, setBatchDetails] = useState<Batch[]>([]); // Store full batch objects separately
+
+  useEffect(() => {
+    // Fetch batch IDs from backend
+    fetch("http://localhost:8080/batches")
+      .then(response => response.json())
+      .then((data: string[]) => {
+        setBatches(data);
+        if (data.length > 0) {
+          setBatchId(data[0]); // Select the first batch by default
+          // For each batch ID, fetch full batch details
+          const fetchDetailsPromises = data.map(id =>
+            fetch(`http://localhost:8080/batch/${id}`)
+              .then(res => res.json())
+          );
+          Promise.all(fetchDetailsPromises)
+            .then(details => setBatchDetails(details))
+            .catch(error => console.error("Error fetching batch details:", error));
+        }
+      })
+      .catch(error => console.error("Error fetching batch IDs:", error));
+  }, []);
 
   const [items] = useState<InventoryItem[]>([
     { id: "i1", name: "Starter Feed", category: "feed", defaultUnit: "kg" },
@@ -121,7 +140,7 @@ export default function BatchMain() {
   const userRole = localStorage.getItem("role");
   const isAdmin = userRole === "admin";
 
-  const selectedBatch = useMemo(() => batches.find(b => b.id === batchId) || null, [batches, batchId]);
+  const selectedBatch = useMemo(() => batchDetails.find(b => b.id === batchId) || null, [batchDetails, batchId]);
   const todayAge = useMemo(() => (selectedBatch ? daysBetween(selectedBatch.startDate, new Date()) : 0), [selectedBatch]);
 
   // Local forms
@@ -227,8 +246,8 @@ export default function BatchMain() {
                 className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 title="Select Batch"
               >
-                {batches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
+                {batches.map(bId => (
+                  <option key={bId} value={bId}>{bId}</option>
                 ))}
               </select>
             </Field>
@@ -239,7 +258,7 @@ export default function BatchMain() {
               <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
             </Field>
             <Field label="Mortality">
-              <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
+              <input readOnly value={mortalityEntries.filter(() => selectedBatch && batchDetails.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
             </Field>
           </div>
           <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
