@@ -99,7 +99,7 @@ export default function BatchMain() {
   // Sample data
   const [batches] = useState<Batch[]>([
     { id: "b1", name: "Batch 1", startDate: new Date(Date.now() - 14 * 86400000).toISOString(), population: 200 },
-    { id: "b2", name: "Batch 2", startDate: new Date(Date.now() - 5 * 86400000).toISOString(), population: 120 },
+    { id: "b2", name: "Batch 2", startDate: new Date(Date.now() - 5 * 86400000).toISOString(), population: 120 }, 
   ]);
 
   const [items] = useState<InventoryItem[]>([
@@ -217,47 +217,49 @@ export default function BatchMain() {
           </button>
         </div>
 
+        {/* Single Batch Card for both Monitoring and Harvesting */}
+        <Card title="Batch" right={<Pill>{selectedBatch ? `Start ${formatDate(selectedBatch.startDate)}` : "Select a batch"}</Pill>}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Batch">
+              <select
+                value={batchId}
+                onChange={e => setBatchId(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                title="Select Batch"
+              >
+                {batches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Population">
+              <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Population" />
+            </Field>
+            <Field label="Age">
+              <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
+            </Field>
+            <Field label="Mortality">
+              <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
+            <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Add Batch">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Add
+            </button>
+            <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Edit Batch">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
+              Edit
+            </button>
+            <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Delete Batch">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
+              Delete
+            </button>
+          </div>
+        </Card>
+
         {tab === 'harvesting' && (
           <>
-            <Card title="Batch" right={<Pill>{selectedBatch ? `Start ${formatDate(selectedBatch.startDate)}` : "Select a batch"}</Pill>}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Batch">
-                  <select
-                    value={batchId}
-                    onChange={e => setBatchId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    title="Select Batch"
-                  >
-                    {batches.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Population">
-                  <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Population" />
-                </Field>
-                <Field label="Age">
-                  <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
-                </Field>
-                <Field label="Mortality">
-                  <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
-                </Field>
-              </div>
-              <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
-                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Add Batch">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                  Add
-                </button>
-                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Edit Batch">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
-                  Edit
-                </button>
-                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Delete Batch">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
-                  Delete
-                </button>
-              </div>
-            </Card>
             {/* Harvesting Table OUTSIDE the Card */}
             {/* Bird Quality, Type, Weight Total, Add to Inventory */}
             <Card title="Harvesting Entry">
@@ -320,55 +322,7 @@ export default function BatchMain() {
           <React.Fragment>
             {monitoringPage === 1 && (
               <>
-                <Card 
-                  title="Batch" 
-                  right={
-                    <div className="flex items-center gap-4">
-                      <Pill>{selectedBatch ? `Start ${formatDate(selectedBatch.startDate)}` : "Select a batch"}</Pill>
-                    </div>
-                  }
-                >
-                  <div className="grid items-end grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field label="Batch">
-                      <select
-                        value={batchId}
-                        onChange={e => setBatchId(e.target.value)}
-                            className="w-full px-4 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            title="Select Batch"
-                      >
-                        {batches.map(b => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Population">
-                    <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Population" />
-                  </Field>
-                  <Field label="Age">
-                    <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
-                  </Field>
-                  <Field label="Mortality">
-                    <input readOnly value={mortalityEntries.filter(() => selectedBatch && batches.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
-                  </Field>
-                </div>
-                <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
-                  <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Add Batch">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    Add
-                  </button>
-                  <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Edit Batch">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" /></svg>
-                    Edit
-                  </button>
-                  <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100" type="button" title="Delete Batch">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m5 0H4" /></svg>
-                    Delete
-                  </button>
-                </div>
-                </Card>
-               
+                
 
                 <Card title="Feed and Medicine Consumption">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-10">
