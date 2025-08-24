@@ -6,7 +6,6 @@ import Home from "../assets/Home.png";
 import Batch from "../assets/Batch.png";
 import Inventory from "../assets/Inventory.png";
 import Sales from "../assets/Sales.png";
-import Supplier from "../assets/Supplier.png";
 import Control from "../assets/Control.png";
 
 const navItems = [
@@ -14,7 +13,6 @@ const navItems = [
   { name: "Inventory", path: "/inventory", icon: Inventory },
   { name: "Batch", path: "/batch", icon: Batch },
   { name: "Sales", path: "/sales", icon: Sales },
-  { name: "Suppliers", path: "/suppliers", icon: Supplier },
   { name: "Control", path: "/control", icon: Control },
 ];
 
