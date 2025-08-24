@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -297,13 +298,19 @@ func main() {
 	http.HandleFunc("/batches", getBatchesHandler)
 	http.HandleFunc("/batch/", getBatchDetailsHandler) // New handler for single batch details
 
-	// Serve static files
+	// Serve static files for uploads
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
+
+	// Serve frontend static files
+	http.Handle("/", http.FileServer(http.Dir("./dist")))
+	http.HandleFunc("/frontend/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, path.Join("./dist", "index.html"))
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("🚀 Server running at http://0.0.0.0:%s\n", port)
+	fmt.Printf("🚀 Server running (frontend and backend) at http://0.0.0.0:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
