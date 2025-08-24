@@ -14,7 +14,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var db *sql.DB
+var db1 *sql.DB // poultry_db
+var db2 *sql.DB // poultry_main
 
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -37,21 +38,34 @@ type User struct {
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
-// Initialize DB connection
+// Initialize both DB connections
 func initDB() {
 	var err error
-	dsn := "poultry:chickmatepoultry@tcp(mysql-poultry.alwaysdata.net:3306)/poultry_db"
-	db, err = sql.Open("mysql", dsn)
+
+	// First DB: poultry_db
+	dsn1 := "poultry:chickmatepoultry@tcp(mysql-poultry.alwaysdata.net:3306)/poultry_db"
+	db1, err = sql.Open("mysql", dsn1)
 	if err != nil {
-		log.Fatal("DB connection error:", err)
+		log.Fatal("DB1 connection error:", err)
 	}
-	if err = db.Ping(); err != nil {
-		log.Fatal("DB ping error:", err)
+	if err = db1.Ping(); err != nil {
+		log.Fatal("DB1 ping error:", err)
 	}
 	fmt.Println("✅ Connected to poultry_db successfully")
+
+	// Second DB: poultry_main
+	dsn2 := "poultry:chickmatepoultry@tcp(mysql-poultry.alwaysdata.net:3306)/poultry_main"
+	db2, err = sql.Open("mysql", dsn2)
+	if err != nil {
+		log.Fatal("DB2 connection error:", err)
+	}
+	if err = db2.Ping(); err != nil {
+		log.Fatal("DB2 ping error:", err)
+	}
+	fmt.Println("✅ Connected to poultry_main successfully")
 }
 
-// POST new user with file upload
+// POST new user with file upload (uses poultry_db)
 func addUserHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 	if r.Method == http.MethodOptions {
@@ -63,14 +77,12 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form (max 5MB)
 	if err := r.ParseMultipartForm(5 << 20); err != nil {
 		log.Println("Parse form error:", err)
 		http.Error(w, "Cannot parse form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Read form values
 	username := r.FormValue("username")
 	firstName := r.FormValue("firstName")
 	lastName := r.FormValue("lastName")
@@ -106,8 +118,8 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("No profile picture uploaded:", err)
 	}
 
-	// Insert into DB
-	_, err = db.Exec(`INSERT INTO cm_users 
+	// Insert into poultry_db
+	_, err = db1.Exec(`INSERT INTO cm_users 
 		(username, first_name, last_name, suffix, email, phone_number, password, role, profile_pic)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		username, firstName, lastName, suffix, email, phoneNumber, password, role, profileFilename,
@@ -123,7 +135,7 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "User added successfully!")
 }
 
-// POST login user
+// POST login user (uses poultry_db)
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 	if r.Method == http.MethodOptions {
@@ -142,9 +154,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Query the database for the user with the provided email and password
 	storedPassword := ""
-	err = db.QueryRow("SELECT password FROM cm_users WHERE email = ?", user.Email).Scan(&storedPassword)
+	err = db1.QueryRow("SELECT password FROM cm_users WHERE email = ?", user.Email).Scan(&storedPassword)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
@@ -155,14 +166,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Compare the provided password with the stored password
-	if user.Password != storedPassword { // In a real app, use a secure password hashing library like bcrypt
+	if user.Password != storedPassword {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	// Fetch user details including profile_pic
-	err = db.QueryRow("SELECT username, email, role, profile_pic FROM cm_users WHERE email = ?", user.Email).Scan(
+	err = db1.QueryRow("SELECT username, email, role, profile_pic FROM cm_users WHERE email = ?", user.Email).Scan(
 		&user.Username, &user.Email, &user.Role, &user.ProfilePic,
 	)
 	if err != nil {
@@ -181,14 +190,33 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Example endpoint using poultry_main
+func testMainDBHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	rows, err := db2.Query("SELECT DATABASE()")
+	if err != nil {
+		http.Error(w, "DB2 query failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var dbName string
+	if rows.Next() {
+		rows.Scan(&dbName)
+	}
+	fmt.Fprintf(w, "✅ Connected to poultry_main, current DB: %s", dbName)
+}
+
 func main() {
 	initDB()
-	defer db.Close()
+	defer db1.Close()
+	defer db2.Close()
 
 	http.HandleFunc("/adduser", addUserHandler)
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/testmain", testMainDBHandler)
 
-	// Serve static files from the "uploads" directory
+	// Serve static files
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
 	fmt.Println("🚀 Server running at http://localhost:8080")
