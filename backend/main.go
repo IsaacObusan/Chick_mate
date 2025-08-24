@@ -300,6 +300,10 @@ func main() {
 	// Serve static files
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
-	fmt.Println("🚀 Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Printf("🚀 Server running at http://0.0.0.0:%s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

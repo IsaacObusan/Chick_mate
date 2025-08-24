@@ -326,8 +326,8 @@ export default function BatchMain() {
                   </div>
                 </Field>
               </div>
-              <div className="sm:col-span-2 md:col-span-4 flex items-end">
-                <button className="w-fit px-3 py-1 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600" type="button" title="Add to Inventory">
+              <div className="flex items-end sm:col-span-2 md:col-span-4">
+                <button className="px-3 py-1 text-sm font-semibold text-white bg-orange-500 w-fit rounded-xl hover:bg-orange-600" type="button" title="Add to Inventory">
                   Add to Inventory
                 </button>
               </div>
@@ -387,20 +387,20 @@ export default function BatchMain() {
                         </div>
                       </div>
 
-                      <div className="sm:col-span-2 md:col-span-4 flex items-end gap-2">
+                      <div className="flex items-end gap-2 sm:col-span-2 md:col-span-4">
                         <button
                           onClick={() => {
                             if (!fmItemId || !fmQty) return alert("Pick item and qty");
                             addFeedMedEntry({ itemId: fmItemId, qty: fmQty, unit: fmUnit });
                             setFmQty(undefined);
                           }}
-                          className="w-fit px-3 py-1 text-sm font-semibold text-white transition-colors bg-orange-500 rounded-xl hover:bg-orange-600"
+                          className="px-3 py-1 text-sm font-semibold text-white transition-colors bg-orange-500 w-fit rounded-xl hover:bg-orange-600"
                           title="Add Feed/Medicine Entry"
                         >
                           Add entry
                         </button>
                         {isAdmin && (
-                          <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
+                          <button className="px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 shadow-sm w-fit rounded-xl hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
                             Edit Items
                           </button>
                         )}
@@ -472,20 +472,20 @@ export default function BatchMain() {
                             <NumberInput value={useQty} onChange={setUseQty} min={0} step={1} placeholder="0" title="Inventory Usage Quantity" />
                           </Field>
                         </div>
-                        <div className="sm:col-span-2 md:col-span-4 flex items-end gap-2">
+                        <div className="flex items-end gap-2 sm:col-span-2 md:col-span-4">
                           <button
                             onClick={() => {
                               if (!useItemId || !useQty) return alert("Pick item and qty");
                               addUsageEntry({ itemId: useItemId, qty: useQty });
                               setUseQty(undefined);
                             }}
-                            className="w-fit px-3 py-1 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600"
+                            className="px-3 py-1 text-sm font-semibold text-white bg-orange-500 w-fit rounded-xl hover:bg-orange-600"
                             title="Add Inventory Usage Entry"
                           >
                             Add entry
                           </button>
                           {isAdmin && (
-                            <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Inventory Items">
+                            <button className="px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 shadow-sm w-fit rounded-xl hover:bg-gray-100" type="button" title="Edit Inventory Items">
                               Edit Items
                             </button>
                           )}
@@ -546,7 +546,7 @@ export default function BatchMain() {
                             />
                           </label>
                         </div>
-                        <div className="sm:col-span-2 md:col-span-4 flex items-end gap-2">
+                        <div className="flex items-end gap-2 sm:col-span-2 md:col-span-4">
                           <button
                             onClick={() => {
                               if (!mortCount) return alert("Enter a count");
@@ -554,13 +554,13 @@ export default function BatchMain() {
                               setMortCount(undefined);
                               setMortCause("");
                             }}
-                            className="w-fit px-3 py-1 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600"
+                            className="px-3 py-1 text-sm font-semibold text-white bg-orange-500 w-fit rounded-xl hover:bg-orange-600"
                             title="Add Mortality Entry"
                           >
                             Add entry
                           </button>
                           {isAdmin && (
-                            <button className="w-fit px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100" type="button" title="Edit Mortality Entries">
+                            <button className="px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 shadow-sm w-fit rounded-xl hover:bg-gray-100" type="button" title="Edit Mortality Entries">
                               Edit Items
                             </button>
                           )}
@@ -606,18 +606,18 @@ export default function BatchMain() {
             {/* Save Button for Mobile View */}
             {tab === 'monitoring' && monitoringPage === 2 && (
               <div className="flex justify-center w-full px-2 m-0 mt-8 sm:pr-6 md:pr-10 lg:pr-20 sm:justify-end">
-                <button className="flex items-center justify-center w-full sm:max-w-xs gap-2 px-4 py-2 text-base font-bold text-white bg-green-600 shadow-lg hover:bg-green-700 rounded-xl" type="button" title="Save All Changes">
+                <button className="flex items-center justify-center w-full gap-2 px-4 py-2 text-base font-bold text-white bg-green-600 shadow-lg sm:max-w-xs hover:bg-green-700 rounded-xl" type="button" title="Save All Changes">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                   Save
                 </button>
               </div>
             )}
             {/* Navigation Buttons for Monitoring Pages */}
-            <div className="flex justify-between items-center mt-8">
+            <div className="flex items-center justify-between mt-8">
               {monitoringPage === 2 && (
                 <button 
                   onClick={() => setMonitoringPage(1)}
-                  className="px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-100"
+                  className="px-4 py-2 text-sm font-semibold text-gray-800 bg-white border border-gray-300 shadow-sm rounded-xl hover:bg-gray-100"
                   title="Previous Page"
                 >
                   Previous
@@ -626,14 +626,14 @@ export default function BatchMain() {
               {monitoringPage === 1 && (
                 <button 
                   onClick={() => setMonitoringPage(2)}
-                  className="ml-auto px-4 py-2 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600"
+                  className="px-4 py-2 ml-auto text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600"
                   title="Next Page"
                 >
                   Next
                 </button>
               )}
             </div>
-            <div className="text-sm text-gray-500 text-center mt-2">
+            <div className="mt-2 text-sm text-center text-gray-500">
               Page {monitoringPage} of 2
             </div>
           </React.Fragment>
