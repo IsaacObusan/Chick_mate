@@ -51,6 +51,7 @@ const Sidebar: React.FC = () => {
   const username = localStorage.getItem("username") || "Guest";
   const email = localStorage.getItem("email") || "guest@example.com";
   const profilePic = localStorage.getItem("profilePic");
+  const role = localStorage.getItem("role");
 
   return (
     <>
@@ -70,6 +71,7 @@ const Sidebar: React.FC = () => {
           <div className="flex flex-col">
             <p className="text-lg font-semibold text-white">{username}</p>
             <p className="text-sm text-green-200">{email}</p>
+            {role && <p className="text-xs text-green-300">{role}</p>}
           </div>
         </div>
 
@@ -104,9 +106,18 @@ const Sidebar: React.FC = () => {
       </aside>
 
       {/* Mobile Top Bar with Logo and Logout */}
-      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-green-800 shadow-lg md:hidden">
-        <img src={Logo} alt="Logo" className="w-auto h-8" />
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 bg-green-800 shadow-lg md:hidden">
+        <img src={Logo} alt="Logo" className="w-auto h-10" />
         <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+            <p className="text-sm text-green-200">{email}</p>
+            {role && <span className="text-xs text-green-300">{role}</span>}
+          </div>
+          <img
+            src={profilePic ? `http://localhost:8080/uploads/${profilePic}` : "https://via.placeholder.com/32"}
+            alt="Profile"
+            className="w-8 h-8 rounded-full"
+          />
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-3 py-1 text-white transition-colors duration-200 bg-transparent rounded hover:bg-green-700"
@@ -114,11 +125,6 @@ const Sidebar: React.FC = () => {
             <LogoutIcon />
             <span>Logout</span>
           </button>
-          <img
-            src={profilePic ? `http://localhost:8080/uploads/${profilePic}` : "https://via.placeholder.com/32"}
-            alt="Profile"
-            className="w-8 h-8 rounded-full"
-          />
         </div>
       </div>
 
