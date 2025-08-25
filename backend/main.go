@@ -41,9 +41,22 @@ type User struct {
 // Batch struct (matching frontend)
 type Batch struct {
 	ID         string    `json:"id"`
-	Name       string    `json:"name"`
+	// Name       string    `json:"name"` // Removed as it doesn't exist in cm_batches table
 	StartDate  string    `json:"startDate"`
+	ExpectedHarvestDate string `json:"expectedHarvestDate"` // Add ExpectedHarvestDate
+	TotalChicken int       `json:"totalChicken"` // Add TotalChicken
 	Population int       `json:"currentChicken"` // Changed from `json:"population"` to `json:"currentChicken"` to match the frontend, but the Go struct field name is still Population.
+	Status     string    `json:"status"` // Add Status
+	Notes      string    `json:"notes,omitempty"` // Add Notes
+}
+
+// MortalityEntry struct
+type MortalityEntryBackend struct {
+	MortalityID string    `json:"mortalityId"`
+	BatchID     string    `json:"batchId"`
+	Count       int       `json:"count"`
+	Cause       string    `json:"cause,omitempty"`
+	Timestamp   time.Time `json:"timestamp"`
 }
 
 // Initialize both DB connections
@@ -210,7 +223,7 @@ func getBatchesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db1.Query("SELECT BatchID FROM cm_batches")
+	rows, err := db1.Query("SELECT DISTINCT BatchID FROM cm_mortality")
 	if err != nil {
 		log.Println("Database query error:", err)
 		http.Error(w, "Server error", http.StatusInternalServerError)
@@ -252,8 +265,8 @@ func getBatchDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var batch Batch
-	err := db1.QueryRow("SELECT BatchID, name, start_date, CurrentChicken FROM cm_batches WHERE BatchID = ?", batchID).Scan(
-		&batch.ID, &batch.Name, &batch.StartDate, &batch.Population,
+	err := db1.QueryRow("SELECT BatchID, StartDate, ExpectedHarvestDate, TotalChicken, CurrentChicken, Status, Notes FROM cm_batches WHERE BatchID = ?", batchID).Scan(
+		&batch.ID, &batch.StartDate, &batch.ExpectedHarvestDate, &batch.TotalChicken, &batch.Population, &batch.Status, &batch.Notes,
 	)
 
 	if err == sql.ErrNoRows {
@@ -286,6 +299,193 @@ func testMainDBHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "✅ Connected to poultry_main, current DB: %s", dbName)
 }
 
+// POST add mortality entry (uses poultry_db)
+func addMortalityEntryHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var entry MortalityEntryBackend
+	err := json.NewDecoder(r.Body).Decode(&entry)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Generate a UUID for MortalityID
+	entry.MortalityID = fmt.Sprintf("%d_%s", time.Now().UnixNano(), entry.BatchID)
+
+	_, err = db1.Exec(`INSERT INTO cm_mortality (MortalityID, BatchID, Count, Cause, Timestamp) VALUES (?, ?, ?, ?, ?)`, 
+		entry.MortalityID, entry.BatchID, entry.Count, entry.Cause, time.Now())
+	if err != nil {
+		log.Println("DB Insert Error:", err)
+		http.Error(w, "Failed to add mortality entry: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(entry)
+}
+
+// GET mortality entries for a batch (uses poultry_db)
+func getMortalityEntriesHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return	
+	}
+
+	batchID := r.URL.Path[len("/mortality/"):]
+	if batchID == "" {
+		http.Error(w, "Batch ID is required", http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db1.Query("SELECT MortalityID, BatchID, Count, Cause, Timestamp FROM cm_mortality WHERE BatchID = ? ORDER BY Timestamp DESC", batchID)
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var entries []MortalityEntryBackend
+	for rows.Next() {
+		var entry MortalityEntryBackend
+		if err := rows.Scan(&entry.MortalityID, &entry.BatchID, &entry.Count, &entry.Cause, &entry.Timestamp); err != nil {
+			log.Println("Scan error:", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		entries = append(entries, entry)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entries)
+}
+
+// GET all unique batch IDs from cm_mortality (uses poultry_db)
+func getUniqueBatchIDsHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rows, err := db1.Query("SELECT DISTINCT BatchID FROM cm_mortality")
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var batchIDs []string
+	for rows.Next() {
+		var batchID string
+		if err := rows.Scan(&batchID); err != nil {
+			log.Println("Scan error:", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		batchIDs = append(batchIDs, batchID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(batchIDs)
+}
+
+// GET mortality IDs for a specific batch ID from cm_mortality (uses poultry_db)
+func getMortalityIDsByBatchIDHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	batchID := r.URL.Path[len("/mortalityIDs/"):]
+	if batchID == "" {
+		http.Error(w, "Batch ID is required", http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db1.Query("SELECT MortalityID FROM cm_mortality WHERE BatchID = ?", batchID)
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var mortalityIDs []string
+	for rows.Next() {
+		var mortalityID string
+		if err := rows.Scan(&mortalityID); err != nil {
+			log.Println("Scan error:", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		mortalityIDs = append(mortalityIDs, mortalityID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(mortalityIDs)
+}
+
+// GET all unique batch IDs from cm_batches (uses poultry_db)
+func getUniqueBatchesFromCmBatchesHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rows, err := db1.Query("SELECT DISTINCT BatchID FROM cm_batches")
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var batchIDs []string
+	for rows.Next() {
+		var batchID string
+		if err := rows.Scan(&batchID); err != nil {
+			log.Println("Scan error:", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		batchIDs = append(batchIDs, batchID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(batchIDs)
+}
+
 func main() {
 	initDB()
 	defer db1.Close()
@@ -296,6 +496,11 @@ func main() {
 	http.HandleFunc("/testmain", testMainDBHandler)
 	http.HandleFunc("/batches", getBatchesHandler)
 	http.HandleFunc("/batch/", getBatchDetailsHandler) // New handler for single batch details
+	http.HandleFunc("/mortality", addMortalityEntryHandler) // New handler to add mortality entry
+	http.HandleFunc("/mortality/", getMortalityEntriesHandler) // New handler to get mortality entries by batch ID
+	http.HandleFunc("/uniqueBatchIDs", getUniqueBatchIDsHandler) // New handler to get unique batch IDs from cm_mortality
+	http.HandleFunc("/mortalityIDs/", getMortalityIDsByBatchIDHandler) // New handler to get mortality IDs by batch ID
+	http.HandleFunc("/uniqueBatchesFromCmBatches", getUniqueBatchesFromCmBatchesHandler) // New handler to get unique batch IDs from cm_batches
 
 	// Serve static files
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
