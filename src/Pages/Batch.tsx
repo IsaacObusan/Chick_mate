@@ -34,6 +34,13 @@ type MortalityEntry = {
 
 type MortalityEntryFrontend = MortalityEntry & { backendMortalityId?: string; batchId: string };
 
+type FeedMedItem = {
+  id: string;
+  name: string;
+  category: string;
+  defaultUnit: Unit;
+};
+
 function Card({ title, children, right }: { title: string; children?: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow">
@@ -85,6 +92,8 @@ export default function BatchMain() {
   const [selectedCmBatchID, setSelectedCmBatchID] = useState<string>("");
   const [currentChickenCount, setCurrentChickenCount] = useState<number | undefined>(undefined); // Re-added as requested
 
+  const [feedMedItems, setFeedMedItems] = useState<FeedMedItem[]>([]);
+
   useEffect(() => {
     // Fetch unique batch IDs from cm_mortality
     fetch("http://localhost:8080/uniqueBatchIDs")
@@ -107,6 +116,17 @@ export default function BatchMain() {
         }
       })
       .catch(error => console.error("Error fetching unique batch IDs from cm_batches:", error));
+
+    fetch("http://localhost:8080/feedmedicineitems")
+      .then(response => response.json())
+      .then((data: FeedMedItem[]) => {
+        setFeedMedItems(data);
+        if (data.length > 0) {
+          setFmItemId(data[0].id);
+          setFmUnit(data[0].defaultUnit);
+        }
+      })
+      .catch(error => console.error("Error fetching feed/medicine items:", error));
 
   }, []);
 
@@ -370,7 +390,7 @@ export default function BatchMain() {
 
                 <Card title="Feed and Medicine Consumption">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-10">
-                    {/* Left side: form and table */}
+                    {/* Left side: form */}
                     <div className="space-y-4 lg:col-span-2">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6">
                         <div className="sm:col-span-2">
@@ -378,91 +398,46 @@ export default function BatchMain() {
                             <select
                               value={fmItemId}
                               onChange={e => {
+                                const selectedItem = feedMedItems.find(item => item.id === e.target.value);
                                 setFmItemId(e.target.value);
-                                const def = [{ id: "i1", name: "Starter Feed", category: "feed", defaultUnit: "kg" }, { id: "i2", name: "Grower Feed", category: "feed", defaultUnit: "kg" }, { id: "i3", name: "Vitamin Mix", category: "medicine", defaultUnit: "ml" }].find(i => i.id === e.target.value)?.defaultUnit as Unit | undefined;
-                                if (def) setFmUnit(def);
+                                if (selectedItem) {
+                                  setFmUnit(selectedItem.defaultUnit);
+                                }
                               }}
                               className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              title="Select Item"
+                              title="Select Feed/Medicine Item"
                             >
-                              {[{ id: "i1", name: "Starter Feed", category: "feed", defaultUnit: "kg" }, { id: "i2", name: "Grower Feed", category: "feed", defaultUnit: "kg" }, { id: "i3", name: "Vitamin Mix", category: "medicine", defaultUnit: "ml" }].map(it => (
-                                <option key={it.id} value={it.id}>{it.name}</option>
+                              {feedMedItems.map(item => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name}
+                                </option>
                               ))}
                             </select>
                           </Field>
                         </div>
-                        <div>
-                          <Field label="Quantity">
-                            <NumberInput value={fmQty} onChange={setFmQty} min={0} step={0.01} placeholder="0" title="Feed/Medicine Quantity" />
-                          </Field>
-                        </div>
-                        <div>
-                          <Field label="Unit">
-                            <select
-                              value={fmUnit}
-                              onChange={e => setFmUnit(e.target.value as Unit)}
-                              className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              title="Select Unit"
-                            >
-                              {(["kg","g","lb","pcs","ml","l"] as Unit[]).map(u => (
-                                <option key={u} value={u}>{u}</option>
-                              ))}
-                            </select>
-                          </Field>
-                        </div>
-                      </div>
-
-                      <div className="flex items-end gap-2 sm:col-span-2 md:col-span-4">
-                        <button
-                          onClick={() => {
-                            if (!fmItemId || !fmQty) return alert("Pick item and qty");
-                            addFeedMedEntry({ itemId: fmItemId, qty: fmQty, unit: fmUnit });
-                            setFmQty(undefined);
-                          }}
-                          className="px-3 py-1 text-sm font-semibold text-white transition-colors bg-orange-500 w-fit rounded-xl hover:bg-orange-600"
-                          title="Add Feed/Medicine Entry"
-                        >
-                          Add entry
-                        </button>
-                        {isAdmin && (
-                          <button className="px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 shadow-sm w-fit rounded-xl hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
-                            Edit Items
+                        <div className="flex items-end">
+                          <button
+                            onClick={() => {
+                              if (fmItemId && fmQty !== undefined) {
+                                addFeedMedEntry({
+                                  itemId: fmItemId,
+                                  qty: fmQty,
+                                  unit: fmUnit
+                                });
+                                setFmQty(undefined);
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-sm font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                            title="Add Feed/Medicine Entry"
+                          >
+                            Add Entry
                           </button>
-                        )}
-                      </div>
-
-                      <div className="overflow-x-auto border rounded-lg max-h-72">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-left text-gray-600 border-b bg-gray-50">
-                              <th className="py-2 pr-3">Time</th>
-                              <th className="py-2 pr-3">Item</th>
-                              <th className="py-2 pr-3">Qty</th>
-                              <th className="py-2">Unit</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {feedMedEntries.map(row => (
-                              <tr key={row.id} className="border-b last:border-0">
-                                <td className="py-2 pr-3 whitespace-nowrap">{new Date(row.timestamp).toLocaleString()}</td>
-                                <td className="py-2 pr-3">{row.itemName}</td>
-                                <td className="py-2 pr-3">{row.qty}</td>
-                                <td className="py-2">{row.unit}</td>
-                              </tr>
-                            ))}
-                            {feedMedEntries.length === 0 && (
-                              <tr>
-                                <td className="py-3 text-gray-500" colSpan={4}>No entries yet</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                        </div>
                       </div>
                     </div>
-
                     {/* Right side: chart */}
                     <div className="lg:col-span-1">
-                      <ChartShell title="Feed chart" />
+                      <ChartShell title="Consumption Trend" />
                     </div>
                   </div>
                 </Card>
@@ -667,9 +642,6 @@ export default function BatchMain() {
         )}
       </main>
       {/* Save Button as normal block below content, only in monitoring */}
-{
-}
-
    
         </div>
       
