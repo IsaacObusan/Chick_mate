@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 
 /**
  * Poultry Farm Monitoring UI - UI only
@@ -6,7 +6,30 @@ import React, { useState, useEffect } from "react";
  * No API wiring. Sample in-memory data.
  */
 
+type Batch = {
+  id: string;
+  name: string;
+  startDate: string; // ISO date
+  population: number;
+};
+
+type InventoryItem = {
+  id: string;
+  name: string;
+  category: "feed" | "medicine" | "general";
+  defaultUnit?: string;
+};
+
 type Unit = "kg" | "g" | "lb" | "pcs" | "ml" | "l";
+
+type FeedMedicineEntry = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  qty: number;
+  unit: Unit;
+  timestamp: string;
+};
 
 type InventoryUsageEntry = {
   id: string;
@@ -21,15 +44,6 @@ type MortalityEntry = {
   count: number;
   cause?: string;
   timestamp: string;
-};
-
-type MortalityEntryFrontend = MortalityEntry & { backendMortalityId?: string; batchId: string };
-
-type FeedMedItem = {
-  id: string;
-  name: string;
-  category: string;
-  defaultUnit: Unit;
 };
 
 function Card({ title, children, right }: { title: string; children?: React.ReactNode; right?: React.ReactNode }) {
@@ -53,6 +67,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function Pill({ children }: { children: React.ReactNode }) {
+  return <span className="px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded bg-gray-50">{children}</span>;
+}
+
 function Divider() {
   return <div className="h-px bg-gray-100" />;
 }
@@ -65,99 +83,80 @@ function ChartShell({ title }: { title: string }) {
   );
 }
 
+function formatDate(d: string | Date) {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString();
+}
+
+function daysBetween(a: string | Date, b: string | Date) {
+  const start = typeof a === "string" ? new Date(a) : a;
+  const end = typeof b === "string" ? new Date(b) : b;
+  const ms = end.getTime() - start.getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
 export default function BatchMain() {
   // Sample data
-
-  // Entries
-  const [usageEntries, setUsageEntries] = useState<InventoryUsageEntry[]>([]);
-  const [mortalityEntries, setMortalityEntries] = useState<MortalityEntryFrontend[]>([]);
-
-  // New states for batch and mortality IDs
-  const [batchIDs, setBatchIDs] = useState<string[]>([]);
-  const [selectedBatchID, setSelectedBatchID] = useState<string>("");
-  const [mortalityIDsForBatch, setMortalityIDsForBatch] = useState<string[]>([]);
-
-  // New states for cm_batches dropdown
-  const [cmBatchesIDs, setCmBatchesIDs] = useState<string[]>([]);
-  const [selectedCmBatchID, setSelectedCmBatchID] = useState<string>("");
-  const [currentChickenCount, setCurrentChickenCount] = useState<number | undefined>(undefined); // Re-added as requested
-
-  const [feedMedItems, setFeedMedItems] = useState<FeedMedItem[]>([]);
+  const [batches, setBatches] = useState<string[]>([]); // Change type to string[]
+  const [batchDetails, setBatchDetails] = useState<Batch[]>([]); // Store full batch objects separately
 
   useEffect(() => {
-    // Fetch unique batch IDs from cm_mortality
-    fetch("http://localhost:8080/uniqueBatchIDs")
+    // Fetch batch IDs from backend
+    fetch("http://localhost:8080/batches")
       .then(response => response.json())
       .then((data: string[]) => {
-        setBatchIDs(data);
+        setBatches(data);
         if (data.length > 0) {
-          setSelectedBatchID(data[0]);
+          setBatchId(data[0]); // Select the first batch by default
+          // For each batch ID, fetch full batch details
+          const fetchDetailsPromises = data.map(id =>
+            fetch(`http://localhost:8080/batch/${id}`)
+              .then(res => res.json())
+          );
+          Promise.all(fetchDetailsPromises)
+            .then(details => setBatchDetails(details))
+            .catch(error => console.error("Error fetching batch details:", error));
         }
       })
-      .catch(error => console.error("Error fetching unique batch IDs:", error));
-
-    // Fetch unique batch IDs from cm_batches
-    fetch("http://localhost:8080/uniqueBatchesFromCmBatches")
-      .then(response => response.json())
-      .then((data: string[]) => {
-        setCmBatchesIDs(data);
-        if (data.length > 0) {
-          setSelectedCmBatchID(data[0]);
-        }
-      })
-      .catch(error => console.error("Error fetching unique batch IDs from cm_batches:", error));
-
-    fetch("http://localhost:8080/feedmedicineitems")
-      .then(response => response.json())
-      .then((data: FeedMedItem[]) => {
-        setFeedMedItems(data);
-        if (data.length > 0) {
-          setFmItemId(data[0].id.toString());
-        }
-      })
-      .catch(error => console.error("Error fetching feed/medicine items:", error));
-
+      .catch(error => console.error("Error fetching batch IDs:", error));
   }, []);
 
-  useEffect(() => {
-    // Fetch mortality IDs for the selected batch ID
-    if (selectedBatchID) {
-      fetch(`http://localhost:8080/mortalityIDs/${selectedBatchID}`)
-        .then(response => response.json())
-        .then((data: string[]) => {
-          setMortalityIDsForBatch(data);
-        })
-        .catch(error => console.error("Error fetching mortality IDs for batch:", error));
-    }
-  }, [selectedBatchID]);
+  const [items] = useState<InventoryItem[]>([
+    { id: "i1", name: "Starter Feed", category: "feed", defaultUnit: "kg" },
+    { id: "i2", name: "Grower Feed", category: "feed", defaultUnit: "kg" },
+    { id: "i3", name: "Vitamin Mix", category: "medicine", defaultUnit: "ml" },
+    { id: "i4", name: "Bedding", category: "general", defaultUnit: "pcs" },
+  ]);
 
-  useEffect(() => {
-    // Fetch CurrentChicken for the selected cm_batches Batch ID
-    if (selectedCmBatchID) {
-      fetch(`http://localhost:8080/batch/${selectedCmBatchID}`)
-        .then(response => response.json())
-        .then((data: { currentChicken: number; expectedHarvestDate: string; totalChicken: number; status: string; notes?: string }) => {
-          setCurrentChickenCount(data.currentChicken); // Re-added
-        })
-        .catch(error => console.error("Error fetching current chicken count for batch:", error));
-    } else {
-      setCurrentChickenCount(undefined); // Re-added
-    }
-  }, [selectedCmBatchID]);
+  // Selection
+  const [batchId, setBatchId] = useState<string>("b1");
+
+  // Entries
+  const [feedMedEntries, setFeedMedEntries] = useState<FeedMedicineEntry[]>([]);
+  const [usageEntries, setUsageEntries] = useState<InventoryUsageEntry[]>([]);
+  const [mortalityEntries, setMortalityEntries] = useState<MortalityEntry[]>([]);
 
   // Get user role from localStorage
   const userRole = localStorage.getItem("role");
   const isAdmin = userRole === "admin";
 
+  const selectedBatch = useMemo(() => batchDetails.find(b => b.id === batchId) || null, [batchDetails, batchId]);
+  const todayAge = useMemo(() => (selectedBatch ? daysBetween(selectedBatch.startDate, new Date()) : 0), [selectedBatch]);
+
   // Local forms
   const [fmItemId, setFmItemId] = useState("i1");
   const [fmQty, setFmQty] = useState<number | undefined>(undefined);
+  const [fmUnit, setFmUnit] = useState<Unit>("kg");
 
-  const [useItemId, setUseItemId] = useState("");
+  const [useItemId, setUseItemId] = useState("i4");
   const [useQty, setUseQty] = useState<number | undefined>(undefined);
 
   const [mortCount, setMortCount] = useState<number | undefined>(undefined);
   const [mortCause, setMortCause] = useState<string>("");
+
+  // Derived lists
+  const feedMedItems = items.filter(i => i.category === "feed" || i.category === "medicine");
+  const generalItems = items.filter(i => i.category === "general");
 
   function NumberInput({ value, onChange, min = 0, step = 1, placeholder, title }: { value?: number; onChange: (v: number) => void; min?: number; step?: number; placeholder?: string; title?: string }) {
     return (
@@ -174,38 +173,41 @@ export default function BatchMain() {
     );
   }
 
+  function addFeedMedEntry(p: { itemId: string; qty: number; unit: Unit }) {
+    const item = items.find(i => i.id === p.itemId);
+    if (!item) return;
+    const entry: FeedMedicineEntry = {
+      id: crypto.randomUUID(),
+      itemId: item.id,
+      itemName: item.name,
+      qty: p.qty,
+      unit: p.unit,
+      timestamp: new Date().toISOString(),
+    };
+    setFeedMedEntries(prev => [entry, ...prev]);
+  }
+
   function addUsageEntry(p: { itemId: string; qty: number }) {
+    const item = items.find(i => i.id === p.itemId);
+    if (!item) return;
     const entry: InventoryUsageEntry = {
       id: crypto.randomUUID(),
-      itemId: p.itemId,
-      itemName: "N/A", // Default name since items are removed
+      itemId: item.id,
+      itemName: item.name,
       qty: p.qty,
       timestamp: new Date().toISOString(),
     };
     setUsageEntries(prev => [entry, ...prev]);
   }
 
-  function addMortalityEntry(p: { count: number; cause?: string; batchId: string }) {
-    const entry: MortalityEntryFrontend = {
+  function addMortalityEntry(p: { count: number; cause?: string }) {
+    const entry: MortalityEntry = {
       id: crypto.randomUUID(),
-      batchId: p.batchId,
       count: p.count,
       cause: p.cause?.trim() ? p.cause.trim() : undefined,
       timestamp: new Date().toISOString(),
     };
-
-    fetch("http://localhost:8080/mortality", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(entry),
-    })
-      .then(response => response.json())
-      .then((data: MortalityEntryFrontend) => {
-        setMortalityEntries(prev => [data, ...prev]);
-      })
-      .catch(error => console.error("Error adding mortality entry:", error));
+    setMortalityEntries(prev => [entry, ...prev]);
   }
 
   const [tab, setTab] = useState<'monitoring' | 'harvesting'>('monitoring');
@@ -235,51 +237,28 @@ export default function BatchMain() {
         </div>
 
         {/* Single Batch Card for both Monitoring and Harvesting */}
-        <Card title="Batch" right={null}>
+        <Card title="Batch" right={<Pill>{selectedBatch ? `Start ${formatDate(selectedBatch.startDate)}` : "Select a batch"}</Pill>}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Select Batch ID (Mortality)">
+            <Field label="Batch">
               <select
-                value={selectedBatchID}
-                onChange={e => setSelectedBatchID(e.target.value)}
+                value={batchId}
+                onChange={e => setBatchId(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                title="Select Batch ID (Mortality)"
+                title="Select Batch"
               >
-                <option value="">Select a Batch ID</option>
-                {batchIDs.map(batchID => (
-                  <option key={batchID} value={batchID}>
-                    {batchID}
-                  </option>
+                {batches.map(bId => (
+                  <option key={bId} value={bId}>{bId}</option>
                 ))}
               </select>
             </Field>
-            <Field label="Mortality IDs for Batch">
-              <div className="w-full px-3 py-2 text-sm bg-gray-100 border rounded-lg">
-                {mortalityIDsForBatch.length > 0
-                  ? mortalityIDsForBatch.join(", ")
-                  : "No Mortality IDs for this Batch"}
-              </div>
+            <Field label="Population">
+              <input readOnly value={selectedBatch?.population ?? ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Population" />
             </Field>
-            <Field label="Select Batch ID (cm_batches)">
-              <select
-                value={selectedCmBatchID}
-                onChange={e => setSelectedCmBatchID(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                title="Select Batch ID (cm_batches)"
-              >
-                <option value="">Select a Batch ID</option>
-                {cmBatchesIDs.map(batchID => (
-                  <option key={batchID} value={batchID}>
-                    {batchID}
-                  </option>
-                ))}
-              </select>
+            <Field label="Age">
+              <input readOnly value={selectedBatch ? `${todayAge} days` : ""} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Batch Age" />
             </Field>
-            <Field label="Current Chicken Count">
-              <div className="w-full px-3 py-2 text-sm bg-gray-100 border rounded-lg">
-                {currentChickenCount !== undefined
-                  ? currentChickenCount
-                  : "Select a Batch to see count"}
-              </div>
+            <Field label="Mortality">
+              <input readOnly value={mortalityEntries.filter(() => selectedBatch && batchDetails.find(b => b.id === batchId)?.id === batchId).reduce((sum, entry) => sum + entry.count, 0)} className="w-full px-4 py-2 text-sm border rounded-lg bg-gray-50" title="Total Mortality" />
             </Field>
           </div>
           <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-3">
@@ -366,7 +345,7 @@ export default function BatchMain() {
 
                 <Card title="Feed and Medicine Consumption">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-10">
-                    {/* Left side: form */}
+                    {/* Left side: form and table */}
                     <div className="space-y-4 lg:col-span-2">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6">
                         <div className="sm:col-span-2">
@@ -375,41 +354,90 @@ export default function BatchMain() {
                               value={fmItemId}
                               onChange={e => {
                                 setFmItemId(e.target.value);
+                                const def = items.find(i => i.id === e.target.value)?.defaultUnit as Unit | undefined;
+                                if (def) setFmUnit(def);
                               }}
                               className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              title="Select Feed/Medicine Item"
+                              title="Select Item"
                             >
-                              {feedMedItems.map(item => (
-                                <option key={item.id} value={item.id}>
-                                  {item.name}
-                                </option>
+                              {feedMedItems.map(it => (
+                                <option key={it.id} value={it.id}>{it.name}</option>
                               ))}
                             </select>
                           </Field>
                         </div>
-                        <div className="flex items-end">
-                          <button
-                            onClick={() => {
-                              if (fmItemId && fmQty !== undefined) {
-                                // addFeedMedEntry({
-                                //   itemId: fmItemId,
-                                //   qty: fmQty,
-                                //   unit: fmUnit
-                                // });
-                                setFmQty(undefined);
-                              }
-                            }}
-                            className="w-full px-3 py-2 text-sm font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                            title="Add Feed/Medicine Entry"
-                          >
-                            Add Entry
-                          </button>
+                        <div>
+                          <Field label="Quantity">
+                            <NumberInput value={fmQty} onChange={setFmQty} min={0} step={0.01} placeholder="0" title="Feed/Medicine Quantity" />
+                          </Field>
+                        </div>
+                        <div>
+                          <Field label="Unit">
+                            <select
+                              value={fmUnit}
+                              onChange={e => setFmUnit(e.target.value as Unit)}
+                              className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              title="Select Unit"
+                            >
+                              {(["kg","g","lb","pcs","ml","l"] as Unit[]).map(u => (
+                                <option key={u} value={u}>{u}</option>
+                              ))}
+                            </select>
+                          </Field>
                         </div>
                       </div>
+
+                      <div className="flex items-end gap-2 sm:col-span-2 md:col-span-4">
+                        <button
+                          onClick={() => {
+                            if (!fmItemId || !fmQty) return alert("Pick item and qty");
+                            addFeedMedEntry({ itemId: fmItemId, qty: fmQty, unit: fmUnit });
+                            setFmQty(undefined);
+                          }}
+                          className="px-3 py-1 text-sm font-semibold text-white transition-colors bg-orange-500 w-fit rounded-xl hover:bg-orange-600"
+                          title="Add Feed/Medicine Entry"
+                        >
+                          Add entry
+                        </button>
+                        {isAdmin && (
+                          <button className="px-3 py-1 text-sm font-semibold text-gray-800 bg-white border border-gray-300 shadow-sm w-fit rounded-xl hover:bg-gray-100" type="button" title="Edit Feed/Medicine Items">
+                            Edit Items
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="overflow-x-auto border rounded-lg max-h-72">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-gray-600 border-b bg-gray-50">
+                              <th className="py-2 pr-3">Time</th>
+                              <th className="py-2 pr-3">Item</th>
+                              <th className="py-2 pr-3">Qty</th>
+                              <th className="py-2">Unit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {feedMedEntries.map(row => (
+                              <tr key={row.id} className="border-b last:border-0">
+                                <td className="py-2 pr-3 whitespace-nowrap">{new Date(row.timestamp).toLocaleString()}</td>
+                                <td className="py-2 pr-3">{row.itemName}</td>
+                                <td className="py-2 pr-3">{row.qty}</td>
+                                <td className="py-2">{row.unit}</td>
+                              </tr>
+                            ))}
+                            {feedMedEntries.length === 0 && (
+                              <tr>
+                                <td className="py-3 text-gray-500" colSpan={4}>No entries yet</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
+
                     {/* Right side: chart */}
                     <div className="lg:col-span-1">
-                      <ChartShell title="Consumption Trend" />
+                      <ChartShell title="Feed chart" />
                     </div>
                   </div>
                 </Card>
@@ -433,7 +461,7 @@ export default function BatchMain() {
                               className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                               title="Select Item"
                             >
-                              {[{ id: "i4", name: "Bedding", category: "general", defaultUnit: "pcs" }].map(it => (
+                              {generalItems.map(it => (
                                 <option key={it.id} value={it.id}>{it.name}</option>
                               ))}
                             </select>
@@ -504,7 +532,7 @@ export default function BatchMain() {
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                         <div>
                           <Field label="Count">
-                            <NumberInput value={mortCount} onChange={setMortCount} min={0} step={1} title="Mortality Count" />
+                            <NumberInput value={mortCount} onChange={setMortCount} min={0} step={1} placeholder="0" title="Mortality Count" />
                           </Field>
                         </div>
                         <div className="sm:col-span-2">
@@ -522,7 +550,7 @@ export default function BatchMain() {
                           <button
                             onClick={() => {
                               if (!mortCount) return alert("Enter a count");
-                              addMortalityEntry({ count: mortCount, cause: mortCause, batchId: "N/A" }); // Assuming batchId is not available here
+                              addMortalityEntry({ count: mortCount, cause: mortCause });
                               setMortCount(undefined);
                               setMortCause("");
                             }}
@@ -544,7 +572,6 @@ export default function BatchMain() {
                           <thead>
                             <tr className="text-left text-gray-600 border-b bg-gray-50">
                               <th className="py-2 pr-3">Time</th>
-                              <th className="py-2 pr-3">Mortality ID</th>
                               <th className="py-2 pr-3">Count</th>
                               <th className="py-2">Cause</th>
                             </tr>
@@ -553,7 +580,6 @@ export default function BatchMain() {
                             {mortalityEntries.map(row => (
                               <tr key={row.id} className="border-b last:border-0">
                                 <td className="py-2 pr-3 whitespace-nowrap">{new Date(row.timestamp).toLocaleString()}</td>
-                                <td className="py-2 pr-3">{row.backendMortalityId ?? "N/A"}</td>
                                 <td className="py-2 pr-3">{row.count}</td>
                                 <td className="py-2">{row.cause ?? ""}</td>
                               </tr>
@@ -614,6 +640,9 @@ export default function BatchMain() {
         )}
       </main>
       {/* Save Button as normal block below content, only in monitoring */}
+{
+}
+
    
         </div>
       
