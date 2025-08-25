@@ -8,15 +8,6 @@ import React, { useState, useEffect } from "react";
 
 type Unit = "kg" | "g" | "lb" | "pcs" | "ml" | "l";
 
-type FeedMedicineEntry = {
-  id: string;
-  itemId: string;
-  itemName: string;
-  qty: number;
-  unit: Unit;
-  timestamp: string;
-};
-
 type InventoryUsageEntry = {
   id: string;
   itemId: string;
@@ -78,7 +69,6 @@ export default function BatchMain() {
   // Sample data
 
   // Entries
-  const [feedMedEntries, setFeedMedEntries] = useState<FeedMedicineEntry[]>([]);
   const [usageEntries, setUsageEntries] = useState<InventoryUsageEntry[]>([]);
   const [mortalityEntries, setMortalityEntries] = useState<MortalityEntryFrontend[]>([]);
 
@@ -122,8 +112,7 @@ export default function BatchMain() {
       .then((data: FeedMedItem[]) => {
         setFeedMedItems(data);
         if (data.length > 0) {
-          setFmItemId(data[0].id);
-          setFmUnit(data[0].defaultUnit);
+          setFmItemId(data[0].id.toString());
         }
       })
       .catch(error => console.error("Error fetching feed/medicine items:", error));
@@ -163,7 +152,6 @@ export default function BatchMain() {
   // Local forms
   const [fmItemId, setFmItemId] = useState("i1");
   const [fmQty, setFmQty] = useState<number | undefined>(undefined);
-  const [fmUnit, setFmUnit] = useState<Unit>("kg");
 
   const [useItemId, setUseItemId] = useState("");
   const [useQty, setUseQty] = useState<number | undefined>(undefined);
@@ -184,18 +172,6 @@ export default function BatchMain() {
         className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     );
-  }
-
-  function addFeedMedEntry(p: { itemId: string; qty: number; unit: Unit }) {
-    const entry: FeedMedicineEntry = {
-      id: crypto.randomUUID(),
-      itemId: p.itemId,
-      itemName: "N/A", // Default name since items are removed
-      qty: p.qty,
-      unit: p.unit,
-      timestamp: new Date().toISOString(),
-    };
-    setFeedMedEntries(prev => [entry, ...prev]);
   }
 
   function addUsageEntry(p: { itemId: string; qty: number }) {
@@ -398,11 +374,7 @@ export default function BatchMain() {
                             <select
                               value={fmItemId}
                               onChange={e => {
-                                const selectedItem = feedMedItems.find(item => item.id === e.target.value);
                                 setFmItemId(e.target.value);
-                                if (selectedItem) {
-                                  setFmUnit(selectedItem.defaultUnit);
-                                }
                               }}
                               className="w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                               title="Select Feed/Medicine Item"
@@ -419,11 +391,11 @@ export default function BatchMain() {
                           <button
                             onClick={() => {
                               if (fmItemId && fmQty !== undefined) {
-                                addFeedMedEntry({
-                                  itemId: fmItemId,
-                                  qty: fmQty,
-                                  unit: fmUnit
-                                });
+                                // addFeedMedEntry({
+                                //   itemId: fmItemId,
+                                //   qty: fmQty,
+                                //   unit: fmUnit
+                                // });
                                 setFmQty(undefined);
                               }
                             }}

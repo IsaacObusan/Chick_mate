@@ -59,6 +59,14 @@ type MortalityEntryBackend struct {
 	Timestamp   time.Time `json:"timestamp"`
 }
 
+// FeedMedItem struct for inventory dropdown
+type FeedMedItem struct {
+	ID       int    `json:"id"`
+	ItemName string `json:"name"`
+	Category string `json:"category"`
+	Unit     string `json:"defaultUnit"`
+}
+
 // Initialize both DB connections
 func initDB() {
 	var err error
@@ -486,6 +494,41 @@ func getUniqueBatchesFromCmBatchesHandler(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(batchIDs)
 }
 
+// GET all feed/medicine items from cm_inventory (uses poultry_db)
+func getFeedMedicineItemsHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rows, err := db1.Query("SELECT ItemID, ItemName, Category, Unit FROM cm_inventory")
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var items []FeedMedItem
+	for rows.Next() {
+		var item FeedMedItem
+		if err := rows.Scan(&item.ID, &item.ItemName, &item.Category, &item.Unit); err != nil {
+			log.Println("Scan error:", err)
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
+		items = append(items, item)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+}
+
 func main() {
 	initDB()
 	defer db1.Close()
@@ -501,6 +544,7 @@ func main() {
 	http.HandleFunc("/uniqueBatchIDs", getUniqueBatchIDsHandler) // New handler to get unique batch IDs from cm_mortality
 	http.HandleFunc("/mortalityIDs/", getMortalityIDsByBatchIDHandler) // New handler to get mortality IDs by batch ID
 	http.HandleFunc("/uniqueBatchesFromCmBatches", getUniqueBatchesFromCmBatchesHandler) // New handler to get unique batch IDs from cm_batches
+	http.HandleFunc("/feedmedicineitems", getFeedMedicineItemsHandler) // New handler to get feed/medicine items
 
 	// Serve static files
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
